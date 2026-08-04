@@ -1,0 +1,31 @@
+name: novaerpmobile
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+    
+
+  provider: ^6.1.2
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+# ... (código superior)
+
+flutter:
+  uses-material-design: true
+
+  # ⚠️ AQUÍ ESTÁ EL TRUCO: 
+  # 'assets:' debe llevar exactamente 2 espacios de sangría, alineado con 'uses-material-design'
+assets:
+  - lib/assets/images/logo.png
