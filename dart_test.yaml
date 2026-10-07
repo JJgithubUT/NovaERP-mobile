@@ -1,0 +1,10 @@
+# Etiquetas de la suite.
+#
+# 'backend' marca las pruebas que necesitan un servidor NovaERP corriendo. No
+# fallan si no lo encuentran (se saltan solas), pero conviene tenerlas
+# identificadas para poder excluirlas en CI:
+#
+#   flutter test --exclude-tags backend
+tags:
+  backend:
+    description: Requiere un backend NovaERP accesible en API_BASE_URL.

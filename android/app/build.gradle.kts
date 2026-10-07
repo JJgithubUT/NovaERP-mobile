@@ -1,11 +1,24 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Credenciales de firma. android/key.properties queda FUERA del repositorio
+// (ver .gitignore): contiene la contrasena del almacen de claves. Si el archivo
+// no existe se compila con la clave de depuracion, para que `flutter run` siga
+// funcionando en una maquina recien clonada.
+val propiedadesFirma = Properties()
+val archivoFirma = rootProject.file("key.properties")
+val hayFirmaDeRelease = archivoFirma.exists()
+if (hayFirmaDeRelease) {
+    archivoFirma.inputStream().use { propiedadesFirma.load(it) }
+}
+
 android {
-    namespace = "com.example.novaerpmobile"
+    namespace = "com.novaerp.movil"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,21 +28,40 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.novaerpmobile"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.novaerp.movil"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hayFirmaDeRelease) {
+            create("release") {
+                keyAlias = propiedadesFirma.getProperty("keyAlias")
+                keyPassword = propiedadesFirma.getProperty("keyPassword")
+                storeFile = propiedadesFirma.getProperty("storeFile")?.let { file(it) }
+                storePassword = propiedadesFirma.getProperty("storePassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Sin key.properties se firma con la clave de depuracion: sirve para
+            // probar `--release` en local, pero un APK asi NO se puede publicar
+            // ni actualizar despues con la clave real.
+            signingConfig = if (hayFirmaDeRelease) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }

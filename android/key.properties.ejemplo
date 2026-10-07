@@ -1,0 +1,18 @@
+# Plantilla de credenciales de firma. Copiela a android/key.properties (que
+# esta en .gitignore) y rellenela con los valores de SU almacen de claves.
+#
+# El almacen se genera una sola vez, en su maquina, y NUNCA se comparte ni se
+# sube al repositorio:
+#
+#   keytool -genkey -v -keystore ~/novaerp-release.jks \
+#           -keyalg RSA -keysize 2048 -validity 10000 -alias novaerp
+#
+# Guarde una copia del .jks y de su contrasena en un gestor de contrasenas o en
+# la boveda de la empresa. Si se pierden, Google Play no admite mas
+# actualizaciones de la app: hay que publicar una aplicacion nueva con otro
+# identificador de paquete y pedir a todos los usuarios que la reinstalen.
+
+storeFile=C:/ruta/absoluta/a/novaerp-release.jks
+storePassword=
+keyAlias=novaerp
+keyPassword=

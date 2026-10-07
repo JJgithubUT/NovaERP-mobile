@@ -1,8 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- La app consume el API del ERP: sin esto, la compilacion de release no
+         tiene red (en debug lo aporta src/debug/AndroidManifest.xml). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
-        android:label="novaerpmobile"
+        android:label="NovaERP"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -43,3 +43,15 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firma de release: nunca al repositorio. key.properties lleva la contrasena
+# del almacen y el .jks es la identidad de la app en Google Play; perder el
+# almacen impide publicar actualizaciones para siempre.
+android/key.properties
+*.jks
+*.keystore
+
+# Configuracion de entorno con la URL real del backend. dev.json si va, para
+# que cualquiera pueda arrancar en local sin adivinar.
+config/prod.json
+config/*.local.json
