@@ -129,8 +129,26 @@ class AuthProvider with ChangeNotifier {
   /// AuthService.obtenerContexto y pasar a [EstadoSesion.activa]. Ante un
   /// ApiException usar [_fallar] y devolver false.
   Future<bool> validarOtp(String codigo) async {
-    // TODO(HU16): implementar.
-    throw UnimplementedError('HU16: AuthProvider.validarOtp');
+    final reto = _reto;
+    if (reto == null) {
+      _fallar('La sesion de ingreso expiro. Vuelva a iniciar sesion.');
+      return false;
+    }
+
+    _empezarCarga();
+    try {
+      final token = await _authService.validarOtp(reto.reto, codigo);
+      await _tokenStorage.guardar(token);
+
+      _contexto = await _authService.obtenerContexto();
+      _reto = null;
+      _cargando = false;
+      _fijarEstado(EstadoSesion.activa);
+      return true;
+    } on ApiException catch (e) {
+      _fallar(e.mensaje);
+      return false;
+    }
   }
 
   /// Vuelve del paso de OTP a la pantalla de credenciales. Descarta el reto:

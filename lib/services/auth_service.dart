@@ -44,8 +44,15 @@ class AuthService {
   /// Un codigo incorrecto cuenta en el mismo contador de intentos fallidos que
   /// la contrasena, asi que insistir aqui puede bloquear la cuenta.
   Future<String> validarOtp(String reto, String codigo) async {
-    // TODO(HU16): implementar.
-    throw UnimplementedError('HU16: validarOtp');
+    final respuesta = await _api.post(ApiConstants.otp, {
+      'reto': reto,
+      'codigo': codigo,
+    });
+    final token = respuesta['token']?.toString();
+    if (token == null || token.isEmpty) {
+      throw StateError('El servidor no devolvio un token de sesion.');
+    }
+    return token;
   }
 
   // ===================================================================
