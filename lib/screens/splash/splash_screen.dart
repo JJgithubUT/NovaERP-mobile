@@ -1,42 +1,19 @@
 import 'package:flutter/material.dart';
-import '../../core/routes/app_routes.dart';
 
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
-
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _navigateToNext();
-  }
-
-  void _navigateToNext() async {
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
-    }
-  }
+/// Pantalla de arranque. Puramente visual: se muestra mientras AuthGate
+/// comprueba si hay una sesion guardada que el backend siga aceptando. La
+/// navegacion la decide el estado de la sesion, no un temporizador.
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFF0D0D0D), // Fondo oscuro de navbar/contraste
+      backgroundColor: Color(0xFF0D0D0D),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Carga el logo que mencionas tener en assets
-            Icon(
-              Icons.layers,
-              size: 80,
-              color: Color(0xFF73030D),
-            ), // Fallback icónico
-            SizedBox(height: 20),
             Text(
               'NovaERP',
               style: TextStyle(

@@ -10,22 +10,39 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_launcher_icons: ^0.13.1
     
 
   provider: ^6.1.2
   cupertino_icons: ^1.0.8
+
+  # Cliente HTTP con interceptores (inyeccion del Bearer y manejo central del 401).
+  dio: ^5.7.0
+  # El JWT de sesion vive en Keychain/EncryptedSharedPreferences, no en texto plano.
+  flutter_secure_storage: ^9.2.2
+  # Enrolamiento MFA: pinta el otpauth_uri que el backend entrega una sola vez.
+  qr_flutter: ^4.1.0
+  # Alta de usuarios: el enlace de activacion se entrega una sola vez y hay que
+  # hacerselo llegar a la persona (el backend aun no envia correos).
+  share_plus: ^10.1.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^6.0.0
+  # Solo para las pruebas: generar codigos TOTP y poder recorrer el login de
+  # dos fases completo contra un backend real.
+  crypto: ^3.0.6
 # ... (código superior)
 
 flutter:
   uses-material-design: true
 
-  # ⚠️ AQUÍ ESTÁ EL TRUCO: 
-  # 'assets:' debe llevar exactamente 2 espacios de sangría, alineado con 'uses-material-design'
-assets:
-  - lib/assets/images/logo.png
+  assets:
+    - lib/assets/images/logo.png
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "lib/assets/images/logo.png"

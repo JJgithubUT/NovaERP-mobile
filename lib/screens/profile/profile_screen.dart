@@ -1,90 +1,91 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../../core/config/app_colors.dart';
 import '../../core/routes/app_routes.dart';
 import '../../providers/auth_provider.dart';
 
+/// Perfil de la sesion en curso, con los datos reales de `/api/core/me/`.
+///
+/// No navega al cerrar sesion: al limpiarse el estado, AuthGate devuelve
+/// automaticamente a la pantalla de login.
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final usuario = authProvider.usuario;
-
-    // --- PALETA DE COLORES CORPORATIVA ---
-    const Color guindaBase = Color(0xFF73030D);
-    const Color rojoVivo = Color(0xFF9E1A22);
-    const Color fondoPrincipal = Color(0xFFF2F2F2);
-    const Color negroProfundo = Color(0xFF0D0D0D);
-    const Color grisMedio = Color(0xFFAFAFAF);
+    final auth = context.watch<AuthProvider>();
+    final contexto = auth.contexto;
+    final usuario = contexto?.usuario;
 
     return Scaffold(
-      backgroundColor: fondoPrincipal,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: negroProfundo,
+        backgroundColor: AppColors.black,
+        automaticallyImplyLeading: Navigator.of(context).canPop(),
         title: const Text(
-          'Mi Perfil',
+          'Mi perfil',
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
           ),
         ),
-        // --- FLECHA DE REGRESO A HOME ---
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         child: Column(
           children: [
-            // --- SECCIÓN DE AVATAR Y ENCABEZADO ---
             Center(
               child: Column(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: AppColors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: negroProfundo.withOpacity(0.05),
+                          color: AppColors.black.withValues(alpha: 0.05),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    child: const CircleAvatar(
+                    child: CircleAvatar(
                       radius: 55,
-                      backgroundColor: guindaBase,
-                      child: Icon(Icons.person, size: 55, color: Colors.white),
+                      backgroundColor: AppColors.primary,
+                      child: Text(
+                        usuario?.iniciales ?? '?',
+                        style: const TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    usuario?.nombre ?? 'Nombre no disponible',
+                    usuario?.nombreCompleto ?? 'Nombre no disponible',
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: negroProfundo,
+                      color: AppColors.black,
                       letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Rol: ${usuario?.rol ?? "Usuario"}',
+                    contexto?.rolPrincipal ?? 'Sin rol',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: rojoVivo.withOpacity(0.8),
+                      color: AppColors.primaryLight.withValues(alpha: 0.9),
                     ),
                   ),
                 ],
@@ -92,158 +93,301 @@ class ProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 36),
 
-            // --- SECCIÓN: INFORMACIÓN DE LA CUENTA ---
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                "Información de la Cuenta",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: negroProfundo,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
+            _Titulo('Información de la cuenta'),
             const SizedBox(height: 12),
-
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: grisMedio.withOpacity(0.2), width: 1),
-              ),
-              child: Column(
-                children: [
-                  _buildProfileTile(
-                    icon: Icons.email_outlined,
-                    title: 'Correo Electrónico',
-                    subtitle: usuario?.email ?? 'correo@novaerp.com',
-                    iconColor: negroProfundo.withOpacity(0.7),
-                  ),
-                  const Divider(height: 1, color: fondoPrincipal, indent: 56),
-                  _buildProfileTile(
-                    icon: Icons.shield_outlined,
-                    title: 'Seguridad',
-                    subtitle: 'Contraseña y accesos verificados',
-                    iconColor: negroProfundo.withOpacity(0.7),
-                  ),
-                ],
-              ),
+            _Tarjeta(
+              children: [
+                _Fila(
+                  icono: Icons.email_outlined,
+                  titulo: 'Correo electrónico',
+                  valor: usuario?.correo ?? '—',
+                ),
+                const _Separador(),
+                _Fila(
+                  icono: Icons.business_outlined,
+                  titulo: 'Empresa',
+                  valor: contexto?.tenant.razonSocial ?? '—',
+                ),
+                const _Separador(),
+                _Fila(
+                  icono: Icons.badge_outlined,
+                  titulo: 'Estado de la cuenta',
+                  valor: usuario?.estado ?? '—',
+                ),
+                const _Separador(),
+                _Fila(
+                  icono: Icons.schedule_outlined,
+                  titulo: 'Último acceso',
+                  valor: _formatearFecha(usuario?.ultimoAcceso),
+                ),
+              ],
             ),
-            const SizedBox(height: 32),
 
-            // --- SECCIÓN: ACCIONES / CERRAR SESIÓN ---
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: grisMedio.withOpacity(0.2), width: 1),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () async {
-                    await authProvider.logout();
-                    if (context.mounted) {
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        AppRoutes.login,
-                        (route) => false,
-                      );
-                    }
-                  },
-                  splashColor: rojoVivo.withOpacity(0.05),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16.0,
-                      vertical: 16.0,
+            const SizedBox(height: 28),
+            _Titulo('Seguridad'),
+            const SizedBox(height: 12),
+            _Tarjeta(
+              children: [
+                _Fila(
+                  icono: Icons.shield_outlined,
+                  titulo: 'Verificación en dos pasos',
+                  valor: (usuario?.mfaEnrolado ?? false)
+                      ? 'Activa'
+                      : 'Pendiente de configurar',
+                ),
+                const _Separador(),
+                ListTile(
+                  leading: const Icon(
+                    Icons.devices_outlined,
+                    color: AppColors.primary,
+                  ),
+                  title: const Text(
+                    'Sesiones activas',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black,
                     ),
-                    child: Row(
+                  ),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios,
+                    color: AppColors.grey,
+                    size: 14,
+                  ),
+                  onTap: () => Navigator.of(context).pushNamed(
+                    AppRoutes.sesiones,
+                  ),
+                ),
+              ],
+            ),
+
+            // Los permisos son largos; se muestran plegados para quien necesite
+            // comprobar por que ve (o no ve) una seccion.
+            if (contexto != null && contexto.permisos.isNotEmpty) ...[
+              const SizedBox(height: 28),
+              _Tarjeta(
+                children: [
+                  Theme(
+                    data: Theme.of(
+                      context,
+                    ).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      leading: const Icon(
+                        Icons.key_outlined,
+                        color: AppColors.primary,
+                      ),
+                      title: const Text(
+                        'Mis permisos',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.black,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '${contexto.permisos.length} permisos vigentes',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.grey,
+                        ),
+                      ),
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: Color(
-                              0xFFFDF2F3,
-                            ), // Fondo rojo suave constante
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.logout, color: rojoVivo, size: 22),
-                        ),
-                        const SizedBox(width: 16),
-                        const Expanded(
-                          child: Text(
-                            'Cerrar Sesión',
-                            style: TextStyle(
-                              color: rojoVivo,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                        const Icon(
-                          Icons.arrow_forward_ios,
-                          color: grisMedio,
-                          size: 14,
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            for (final codigo in contexto.permisos.toList()
+                              ..sort())
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.background,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  codigo,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontFamily: 'monospace',
+                                    color: AppColors.black,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                ),
+                ],
               ),
-            ),
+            ],
+
+            const SizedBox(height: 32),
+            _BotonCerrarSesion(cargando: auth.cargando),
+            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-  // Helper estético para las filas de información
-  Widget _buildProfileTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color iconColor,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF2F2F2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  static String _formatearFecha(DateTime? fecha) {
+    if (fecha == null) return 'Primer acceso';
+    final local = fecha.toLocal();
+    String dos(int n) => n.toString().padLeft(2, '0');
+    return '${dos(local.day)}/${dos(local.month)}/${local.year} '
+        '${dos(local.hour)}:${dos(local.minute)}';
+  }
+}
+
+class _BotonCerrarSesion extends StatelessWidget {
+  const _BotonCerrarSesion({required this.cargando});
+
+  final bool cargando;
+
+  /// HU17: aqui van la confirmacion, el indicador de carga y el manejo de
+  /// errores del cierre de sesion. La base solo dispara la accion.
+  Future<void> _confirmar(BuildContext context) async {
+    await context.read<AuthProvider>().cerrarSesion();
+    // Sin navegacion: AuthGate reacciona al cambio de estado.
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.grey.withValues(alpha: 0.2)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: cargando ? null : () => _confirmar(context),
+          splashColor: AppColors.primaryLight.withValues(alpha: 0.05),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFFAFAFAF),
-                    fontWeight: FontWeight.w500,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFDF2F3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.logout,
+                    color: AppColors.primaryLight,
+                    size: 22,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF0D0D0D),
-                    fontWeight: FontWeight.w600,
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                    'Cerrar sesión',
+                    style: TextStyle(
+                      color: AppColors.primaryLight,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: AppColors.grey,
+                  size: 14,
                 ),
               ],
             ),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Titulo extends StatelessWidget {
+  const _Titulo(this.texto);
+
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        texto,
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: AppColors.black,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+class _Tarjeta extends StatelessWidget {
+  const _Tarjeta({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.grey.withValues(alpha: 0.2)),
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
+class _Separador extends StatelessWidget {
+  const _Separador();
+
+  @override
+  Widget build(BuildContext context) => const Divider(
+    height: 1,
+    color: AppColors.background,
+    indent: 56,
+  );
+}
+
+class _Fila extends StatelessWidget {
+  const _Fila({
+    required this.icono,
+    required this.titulo,
+    required this.valor,
+  });
+
+  final IconData icono;
+  final String titulo;
+  final String valor;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icono, color: AppColors.black.withValues(alpha: 0.7)),
+      title: Text(
+        titulo,
+        style: const TextStyle(fontSize: 13, color: AppColors.grey),
+      ),
+      subtitle: Text(
+        valor,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+          color: AppColors.black,
+        ),
       ),
     );
   }

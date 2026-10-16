@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Solo aplica a las compilaciones de depuracion (esta en src/debug).
+
+  El backend de desarrollo corre en http://, y desde Android 9 el trafico en
+  claro esta bloqueado por defecto: sin esto, cualquier peticion falla con un
+  error de red que no dice por que.
+
+  La compilacion de release NO incluye este archivo, asi que en produccion se
+  sigue exigiendo HTTPS.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

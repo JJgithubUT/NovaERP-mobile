@@ -1,0 +1,5 @@
+{
+  "_comentario": "Entorno de desarrollo. Se usa con: flutter run --dart-define-from-file=config/dev.json. API_BASE_URL debe ser alcanzable DESDE EL DISPOSITIVO: 10.0.2.2 en el emulador de Android, la IP del PC en la LAN para un telefono fisico, 127.0.0.1 en escritorio.",
+  "API_BASE_URL": "http://127.0.0.1:8000",
+  "TENANT_SLUG": "acme"
+}

@@ -1,0 +1,10 @@
+{
+  "_comentario": "Plantilla del entorno de produccion. Copiela a config/prod.json (que esta en .gitignore) y rellene los valores reales. Se usa con: flutter build appbundle --dart-define-from-file=config/prod.json",
+
+  "_API_BASE_URL": "Host EXACTO que figura en ALLOWED_HOSTS del backend. Debe ser https:// — un build de release bloquea el trafico en claro. Sin barra final.",
+  "API_BASE_URL": "https://api.suempresa.com",
+
+  "_TENANT_SLUG": "Slug de la empresa en core.tenant. Esta app se compila por cliente; para varias empresas hay que generar un build por cada una.",
+  "TENANT_SLUG": "suempresa"
+
+}

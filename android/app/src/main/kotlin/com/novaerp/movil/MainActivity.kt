@@ -1,4 +1,4 @@
-package com.example.novaerpmobile
+package com.novaerp.movil
 
 import io.flutter.embedding.android.FlutterActivity
 
