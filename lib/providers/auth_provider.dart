@@ -179,8 +179,14 @@ class AuthProvider with ChangeNotifier {
   /// seria peor). Terminar con [_limpiarSesionLocalAsync]; AuthGate lleva solo
   /// al login.
   Future<void> cerrarSesion() async {
-    // TODO(HU17): implementar.
-    throw UnimplementedError('HU17: AuthProvider.cerrarSesion');
+    _empezarCarga();
+    try {
+      await _authService.cerrarSesion();
+    } catch (_) {
+      // Sin red o token ya vencido: se cierra igual en el dispositivo.
+    }
+    _cargando = false;
+    await _limpiarSesionLocalAsync();
   }
 
   // ===================================================================
