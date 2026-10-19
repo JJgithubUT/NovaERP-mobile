@@ -15,4 +15,12 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
-# NovaERP-mobile
+
+
+## Sprint 1 - Completado ✅
+
+## Sprint 2 - Completado ✅
+
+## Sprint 3 - N/A        🟥
+
+## Sprint 4 - En proceso 🟨
