@@ -55,4 +55,14 @@ class AuthService {
       'correo': correo,
     });
   }
+
+  /// Consume el token de un solo uso (1 h de vigencia) y fija la nueva
+  /// contrasena. Token vencido o ya usado -> 422 con el mismo mensaje.
+  /// Al terminar, el backend invalida TODAS las sesiones previas del usuario.
+  Future<void> restablecerPassword(String token, String password) async {
+    await _api.post(ApiConstants.restablecerPassword, {
+      'token': token,
+      'password': password,
+    });
+  }
 }

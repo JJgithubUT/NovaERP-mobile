@@ -249,10 +249,29 @@ class _BotonCerrarSesion extends StatelessWidget {
 
   final bool cargando;
 
-  /// HU17: aqui van la confirmacion, el indicador de carga y el manejo de
-  /// errores del cierre de sesion. La base solo dispara la accion.
+  /// Pide confirmacion y cierra la sesion. El provider cierra en el
+  /// dispositivo aunque el servidor no responda, asi que no hay error que mostrar.
   Future<void> _confirmar(BuildContext context) async {
-    await context.read<AuthProvider>().cerrarSesion();
+    final auth = context.read<AuthProvider>();
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Seguro que deseas cerrar tu sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
+      ),
+    );
+    if (confirmado != true) return;
+    await auth.cerrarSesion();
     // Sin navegacion: AuthGate reacciona al cambio de estado.
   }
 
@@ -297,11 +316,18 @@ class _BotonCerrarSesion extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: AppColors.grey,
-                  size: 14,
-                ),
+                if (cargando)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: AppColors.grey,
+                    size: 14,
+                  ),
               ],
             ),
           ),
