@@ -75,8 +75,19 @@ class PersonalService {
     String orden = 'nombre',
     bool descendente = false,
   }) async {
-    // TODO(HU06): implementar.
-    throw UnimplementedError('HU06: PersonalService.usuarios');
+    final json = await _api.get(
+      ApiConstants.usuarios,
+      query: _consulta({
+        'page': pagina,
+        'search': busqueda,
+        'estado': estado,
+        'departamento': departamento,
+        'rol': rolId,
+        'orden': orden,
+        if (descendente) 'desc': 'true',
+      }),
+    );
+    return Paginado.fromJson(json, UsuarioDirectorio.fromJson);
   }
 
   // ===================================================================
