@@ -193,6 +193,18 @@ class AuthProvider with ChangeNotifier {
   // BASE (ya hecho)
   // ===================================================================
 
+  /// HU09: vuelve a pedir el perfil a `/api/core/me/`. Devuelve false si falla;
+  /// en ese caso conserva el contexto que ya tenia.
+  Future<bool> recargarPerfil() async {
+    try {
+      _contexto = await _authService.obtenerContexto();
+      notifyListeners();
+      return true;
+    } on ApiException {
+      return false;
+    }
+  }
+
   void limpiarError() {
     if (_error == null) return;
     _error = null;
