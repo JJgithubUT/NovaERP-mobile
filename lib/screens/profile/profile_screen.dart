@@ -33,6 +33,25 @@ class ProfileScreen extends StatelessWidget {
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            tooltip: 'Actualizar',
+            icon: const Icon(Icons.refresh),
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final ok = await context.read<AuthProvider>().recargarPerfil();
+              if (!ok) {
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'No fue posible recuperar la información del perfil.',
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -113,6 +132,14 @@ class ProfileScreen extends StatelessWidget {
                   icono: Icons.badge_outlined,
                   titulo: 'Estado de la cuenta',
                   valor: usuario?.estado ?? '—',
+                ),
+                const _Separador(),
+                _Fila(
+                  icono: Icons.verified_user_outlined,
+                  titulo: 'Roles vigentes',
+                  valor: (contexto?.roles.isEmpty ?? true)
+                      ? 'Sin roles'
+                      : contexto!.roles.join(', '),
                 ),
                 const _Separador(),
                 _Fila(
