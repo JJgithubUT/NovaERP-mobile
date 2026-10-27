@@ -53,8 +53,16 @@ class PersonalService {
     String? departamento,
     List<String> rolesIds = const [],
   }) async {
-    // TODO(HU05): implementar.
-    throw UnimplementedError('HU05: PersonalService.crearUsuario');
+    final json = await _api.post(ApiConstants.usuarios, {
+      'correo': correo,
+      'nombre_completo': nombreCompleto,
+      if (telefono != null && telefono.isNotEmpty) 'telefono': telefono,
+      if (puesto != null && puesto.isNotEmpty) 'puesto': puesto,
+      if (departamento != null && departamento.isNotEmpty)
+        'departamento': departamento,
+      if (rolesIds.isNotEmpty) 'roles': rolesIds,
+    });
+    return UsuarioCreado.fromJson(json);
   }
 
   // ===================================================================
