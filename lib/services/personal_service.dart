@@ -104,7 +104,7 @@ class PersonalService {
   /// POST [ApiConstants.usuarios]{id}/suspender/
   Future<void> suspender(String id) async {
     // TODO(HU08): implementar.
-    throw UnimplementedError('HU08: PersonalService.suspender');
+    await _api.post('${ApiConstants.usuarios}$id/suspender/');
   }
 
   /// Reactiva a un usuario suspendido, conservando sus roles.
@@ -112,7 +112,7 @@ class PersonalService {
   /// POST [ApiConstants.usuarios]{id}/reactivar/
   Future<void> reactivar(String id) async {
     // TODO(HU08): implementar.
-    throw UnimplementedError('HU08: PersonalService.reactivar');
+    await _api.post('${ApiConstants.usuarios}$id/reactivar/');
   }
 
   // ===================================================================
