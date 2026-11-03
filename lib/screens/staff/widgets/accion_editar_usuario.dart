@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../../core/auth/permisos.dart';
 import '../../../core/widgets/accion_tile.dart';
 import '../../../models/personal.dart';
+import '../../../providers/auth_provider.dart';
+import '../forms/editar_usuario_form.dart';
 
-/// HU07 - Editar usuario.
+/// HU07 - Editar usuario. Fila de accion de la ficha del usuario.
 ///
-/// Fila de accion de la ficha del usuario. Guia: al tocarla abrir un formulario
-/// precargado con los datos vigentes (puedes crearlo en forms/editar_usuario_form.dart
-/// y reutilizar `CampoFormulario` de core/widgets), pedir confirmacion explicita
-/// antes de guardar, enviar solo lo que cambio con `PersonalService.editarUsuario`
-/// y, si cambio el correo, mostrar el token con `mostrarEnlaceActivacion`
-/// (widgets/enlace_activacion.dart). Mostrar solo si
-/// `AuthProvider.puede(Permisos.usuariosEditar)`.
-///
-/// Contrato que usa la ficha (detalle_usuario.dart): conservar el nombre de la
-/// clase y sus parametros. Tras guardar, llamar [onEditado] para que la ficha y
-/// el directorio se recarguen.
+/// Solo se muestra con el permiso `core:usuarios:editar`. Tras guardar llama a
+/// [onEditado]: la ficha vuelve al directorio, que se recarga.
 class AccionEditarUsuario extends StatelessWidget {
   const AccionEditarUsuario({
     super.key,
@@ -28,15 +23,17 @@ class AccionEditarUsuario extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO(HU07): implementar la accion.
-    return const AccionTile(
+    final auth = context.watch<AuthProvider>();
+    if (!auth.puede(Permisos.usuariosEditar)) return const SizedBox.shrink();
+
+    return AccionTile(
       icono: Icons.edit_outlined,
       etiqueta: 'Editar usuario',
-      detalle: 'HU07 pendiente',
-      onTap: _sinAccion,
-      deshabilitado: true,
+      detalle: 'Correo, nombre, teléfono, puesto y departamento',
+      onTap: () async {
+        final guardado = await abrirEdicionUsuario(context, usuario);
+        if (guardado) onEditado();
+      },
     );
   }
-
-  static void _sinAccion() {}
 }
