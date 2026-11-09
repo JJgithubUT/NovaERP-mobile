@@ -49,6 +49,9 @@ class ApiConstants {
   static const String usuarios = '/api/core/usuarios/';
   static const String roles = '/api/core/roles/';
 
+  /// Catalogo maestro de permisos, agrupado por dominio (selector de roles).
+  static const String permisos = '/api/core/permisos/';
+
   /// Base de la URL de activacion que se comparte al dar de alta un usuario,
   /// p. ej. 'https://erp.miempresa.com/activar'.
   ///

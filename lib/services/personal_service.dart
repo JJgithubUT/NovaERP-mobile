@@ -3,7 +3,8 @@ import '../core/network/api_client.dart';
 import '../models/paginado.dart';
 import '../models/personal.dart';
 
-/// Gestion de usuarios del tenant (EP01: RF-05..RF-09).
+/// Gestion de usuarios (EP01: RF-05..RF-09) y de roles (EP02: RF-10..RF-13)
+/// del tenant.
 ///
 /// REPARTO DEL SPRINT: cada HU implementa SOLO su bloque (los marcados con
 /// "HUxx"). Los bloques estan separados a proposito para que los pull requests
@@ -34,6 +35,14 @@ class PersonalService {
       pagina++;
     }
     return acumulados;
+  }
+
+  /// Catalogo maestro de permisos agrupado por dominio. Es el origen del
+  /// selector al crear o editar un rol: solo se pueden elegir permisos de aqui.
+  /// Los de modulos que el tenant no tiene activos llegan como `inerte`.
+  Future<List<DominioPermisos>> catalogoPermisos() async {
+    final json = await _api.get(ApiConstants.permisos);
+    return DominioPermisos.listaDesde(json);
   }
 
   // ===================================================================
@@ -130,6 +139,61 @@ class PersonalService {
   /// POST [ApiConstants.usuarios]{id}/reactivar/
   Future<void> reactivar(String id) async {
     await _api.post('${ApiConstants.usuarios}$id/reactivar/');
+  }
+
+  // ===================================================================
+  // HU10 - Crear rol de trabajo
+  // ===================================================================
+
+  /// Alta de un rol personalizado con permisos del catalogo maestro.
+  ///
+  /// POST [ApiConstants.roles]   body: {nombre, permisos: [codigo, ...]}
+  /// 422 si el nombre ya existe en el tenant (campo 'nombre') o si no hay al
+  /// menos un permiso (campo 'permisos').
+  Future<Rol> crearRol({
+    required String nombre,
+    required Set<String> permisos,
+  }) async {
+    // TODO(HU10): implementar.
+    throw UnimplementedError('HU10: PersonalService.crearRol');
+  }
+
+  // ===================================================================
+  // HU12 - Modificar permisos de un rol existente
+  // ===================================================================
+
+  /// Edicion parcial de un rol: nombre y/o conjunto COMPLETO de permisos.
+  /// El conjunto de permisos se reemplaza entero, no se parcha.
+  ///
+  /// PATCH [ApiConstants.roles]{id}/   body: {nombre?, permisos?, activo?}
+  /// 403 "Este rol de sistema no puede modificarse." sobre TENANT_ADMIN.
+  Future<Rol> editarRol(String id, Map<String, dynamic> cambios) async {
+    // TODO(HU12): implementar.
+    throw UnimplementedError('HU12: PersonalService.editarRol');
+  }
+
+  // ===================================================================
+  // HU13 - Eliminar o desactivar un rol personalizado
+  // ===================================================================
+
+  /// Baja logica de un rol (nunca hay borrado fisico).
+  ///
+  /// DELETE [ApiConstants.roles]{id}/                    -> si no tiene usuarios
+  /// DELETE [ApiConstants.roles]{id}/?desactivar=true    -> con usuarios, tras
+  ///   confirmar. Sin la bandera y con usuarios asignados responde 422
+  ///   "Este rol tiene N usuarios asignados..." (campo 'rol').
+  /// 403 sobre TENANT_ADMIN.
+  Future<void> desactivarRol(String id, {bool confirmado = false}) async {
+    // TODO(HU13): implementar.
+    throw UnimplementedError('HU13: PersonalService.desactivarRol');
+  }
+
+  /// Reactiva un rol dado de baja, para poder asignarlo de nuevo.
+  ///
+  /// PATCH [ApiConstants.roles]{id}/   body: {activo: true}
+  Future<void> reactivarRol(String id) async {
+    // TODO(HU13): implementar.
+    throw UnimplementedError('HU13: PersonalService.reactivarRol');
   }
 
   // ===================================================================

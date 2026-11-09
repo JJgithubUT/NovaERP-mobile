@@ -91,15 +91,23 @@ class Rol {
   });
 
   factory Rol.fromJson(Map<String, dynamic> json) {
+    // El backend envia los permisos como LISTA de {dominio, permisos: [...]}
+    // (rol_service.serialize_rol). Se acepta tambien un mapa {dominio: [...]}
+    // por si alguna version lo entrega asi.
     final permisos = <String, List<PermisoRol>>{};
     final crudo = json['permisos'];
-    if (crudo is Map) {
+    List<PermisoRol> aPermisos(Object? lista) => (lista as List? ?? const [])
+        .whereType<Map>()
+        .map((p) => PermisoRol.fromJson(Map<String, dynamic>.from(p)))
+        .toList();
+    if (crudo is List) {
+      for (final grupo in crudo.whereType<Map>()) {
+        final dominio = grupo['dominio']?.toString() ?? '';
+        permisos[dominio] = aPermisos(grupo['permisos']);
+      }
+    } else if (crudo is Map) {
       crudo.forEach((dominio, lista) {
-        if (lista is! List) return;
-        permisos[dominio.toString()] = lista
-            .whereType<Map>()
-            .map((p) => PermisoRol.fromJson(Map<String, dynamic>.from(p)))
-            .toList();
+        permisos[dominio.toString()] = aPermisos(lista);
       });
     }
 
@@ -117,6 +125,13 @@ class Rol {
   int get totalPermisos =>
       permisosPorDominio.values.fold(0, (n, lista) => n + lista.length);
 
+  /// Codigos de todos los permisos del rol. Es lo que precarga el selector al
+  /// editar y lo que se envia al guardar.
+  Set<String> get codigosPermisos => {
+    for (final lista in permisosPorDominio.values)
+      for (final p in lista) p.codigo,
+  };
+
   /// Permisos que existen en el rol pero no aplican porque su modulo esta
   /// desactivado en el tenant. El backend los conserva en vez de borrarlos.
   int get permisosInertes => permisosPorDominio.values
@@ -132,12 +147,17 @@ class PermisoRol {
   final String accion;
   final bool inerte;
 
+  /// Texto del catalogo maestro (p. ej. "RF-52 Configurar umbral de
+  /// aprobacion"). Puede venir vacio.
+  final String descripcion;
+
   const PermisoRol({
     required this.codigo,
     required this.dominio,
     required this.recurso,
     required this.accion,
     required this.inerte,
+    this.descripcion = '',
   });
 
   factory PermisoRol.fromJson(Map<String, dynamic> json) => PermisoRol(
@@ -146,7 +166,35 @@ class PermisoRol {
     recurso: json['recurso']?.toString() ?? '',
     accion: json['accion']?.toString() ?? '',
     inerte: json['inerte'] == true,
+    descripcion: json['descripcion']?.toString() ?? '',
   );
+}
+
+/// Un dominio del catalogo maestro de permisos (`GET /api/core/permisos/`).
+/// Es el origen del selector de permisos al crear o editar un rol: solo se
+/// pueden elegir permisos de este catalogo. Los de modulos que el tenant no
+/// tiene activos llegan marcados como inertes.
+class DominioPermisos {
+  final String dominio;
+  final List<PermisoRol> permisos;
+
+  const DominioPermisos({required this.dominio, required this.permisos});
+
+  /// Lee el sobre completo: `{"dominios": [{dominio, permisos: [...]}]}`.
+  static List<DominioPermisos> listaDesde(Map<String, dynamic> json) {
+    return (json['dominios'] as List? ?? const [])
+        .whereType<Map>()
+        .map((d) {
+          return DominioPermisos(
+            dominio: d['dominio']?.toString() ?? '',
+            permisos: (d['permisos'] as List? ?? const [])
+                .whereType<Map>()
+                .map((p) => PermisoRol.fromJson(Map<String, dynamic>.from(p)))
+                .toList(),
+          );
+        })
+        .toList();
+  }
 }
 
 /// Rol tal como aparece asignado a un usuario (RF-14/RF-15).
