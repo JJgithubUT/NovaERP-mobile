@@ -20,6 +20,7 @@ class ListaPaginada<T> extends StatefulWidget {
     required this.cargar,
     required this.itemBuilder,
     this.mensajeVacio = 'No hay registros',
+    this.mensajeError,
     this.iconoVacio = Icons.inbox_outlined,
     this.cabecera,
     this.separador = true,
@@ -32,6 +33,10 @@ class ListaPaginada<T> extends StatefulWidget {
 
   final Widget Function(BuildContext contexto, T elemento) itemBuilder;
   final String mensajeVacio;
+
+  /// Texto a mostrar si la consulta falla (en lugar del que devuelve el
+  /// servidor). Util cuando el criterio de aceptacion fija el mensaje.
+  final String? mensajeError;
   final IconData iconoVacio;
 
   /// Contenido fijo sobre la lista (buscador, filtros, totales).
@@ -173,7 +178,9 @@ class ListaPaginadaState<T> extends State<ListaPaginada<T>> {
         titulo: _error!.esPermisoDenegado
             ? 'Sin permiso para ver esto'
             : 'No se pudo cargar',
-        detalle: _error!.mensaje,
+        detalle: _error!.esPermisoDenegado
+            ? _error!.mensaje
+            : (widget.mensajeError ?? _error!.mensaje),
         accion: _error!.esPermisoDenegado ? null : recargar,
       );
     }

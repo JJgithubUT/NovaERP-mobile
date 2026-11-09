@@ -16,10 +16,19 @@ class PersonalService {
   // BASE (ya hecho): catalogo de roles para los selectores.
   // ===================================================================
 
-  Future<Paginado<Rol>> roles({int pagina = 1, String? busqueda}) async {
+  /// Roles del tenant, paginados. [activo] filtra por estado (null = todos).
+  Future<Paginado<Rol>> roles({
+    int pagina = 1,
+    String? busqueda,
+    bool? activo,
+  }) async {
     final json = await _api.get(
       ApiConstants.roles,
-      query: _consulta({'page': pagina, 'search': busqueda}),
+      query: _consulta({
+        'page': pagina,
+        'search': busqueda,
+        'activo': activo?.toString(),
+      }),
     );
     return Paginado.fromJson(json, Rol.fromJson);
   }
@@ -154,8 +163,11 @@ class PersonalService {
     required String nombre,
     required Set<String> permisos,
   }) async {
-    // TODO(HU10): implementar.
-    throw UnimplementedError('HU10: PersonalService.crearRol');
+    final json = await _api.post(ApiConstants.roles, {
+      'nombre': nombre,
+      'permisos': permisos.toList(),
+    });
+    return Rol.fromJson(json);
   }
 
   // ===================================================================
@@ -168,8 +180,8 @@ class PersonalService {
   /// PATCH [ApiConstants.roles]{id}/   body: {nombre?, permisos?, activo?}
   /// 403 "Este rol de sistema no puede modificarse." sobre TENANT_ADMIN.
   Future<Rol> editarRol(String id, Map<String, dynamic> cambios) async {
-    // TODO(HU12): implementar.
-    throw UnimplementedError('HU12: PersonalService.editarRol');
+    final json = await _api.patch('${ApiConstants.roles}$id/', cambios);
+    return Rol.fromJson(json);
   }
 
   // ===================================================================
@@ -184,16 +196,15 @@ class PersonalService {
   ///   "Este rol tiene N usuarios asignados..." (campo 'rol').
   /// 403 sobre TENANT_ADMIN.
   Future<void> desactivarRol(String id, {bool confirmado = false}) async {
-    // TODO(HU13): implementar.
-    throw UnimplementedError('HU13: PersonalService.desactivarRol');
+    final sufijo = confirmado ? '?desactivar=true' : '';
+    await _api.delete('${ApiConstants.roles}$id/$sufijo');
   }
 
   /// Reactiva un rol dado de baja, para poder asignarlo de nuevo.
   ///
   /// PATCH [ApiConstants.roles]{id}/   body: {activo: true}
   Future<void> reactivarRol(String id) async {
-    // TODO(HU13): implementar.
-    throw UnimplementedError('HU13: PersonalService.reactivarRol');
+    await _api.patch('${ApiConstants.roles}$id/', {'activo': true});
   }
 
   // ===================================================================
