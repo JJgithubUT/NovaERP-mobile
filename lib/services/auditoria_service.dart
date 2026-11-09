@@ -1,7 +1,10 @@
+import '../core/config/api_constants.dart';
 import '../core/network/api_client.dart';
+import '../core/network/api_exception.dart';
 import '../core/network/archivo_descargado.dart';
 import '../models/auditoria.dart';
 import '../models/paginado.dart';
+import 'personal_service.dart';
 
 /// Bitacora de auditoria del tenant (EP04: RF-20..RF-24).
 ///
@@ -13,7 +16,6 @@ import '../models/paginado.dart';
 /// metodo aqui. Su parte en la app es la pantalla de detalle de un evento
 /// (screens/audit/detalle_evento.dart).
 class AuditoriaService {
-  // ignore: unused_field -- lo usan los bloques de HU21
   final ApiClient _api = ApiClient.instancia;
 
   // ===================================================================
@@ -33,8 +35,18 @@ class AuditoriaService {
     DateTime? desde,
     DateTime? hasta,
   }) async {
-    // TODO(HU21): implementar.
-    throw UnimplementedError('HU21: AuditoriaService.bitacora');
+    final json = await _api.get(
+      ApiConstants.bitacora,
+      query: _consulta({
+        'page': pagina,
+        'usuario_id': usuarioId,
+        'operacion': operacion,
+        'entidad': entidad,
+        'desde': _soloFecha(desde),
+        'hasta': _soloFecha(hasta),
+      }),
+    );
+    return Paginado.fromJson(json, EventoAuditoria.fromJson);
   }
 
   /// Exporta la bitacora con los mismos filtros de [bitacora].
@@ -51,8 +63,18 @@ class AuditoriaService {
     DateTime? desde,
     DateTime? hasta,
   }) async {
-    // TODO(HU21): implementar.
-    throw UnimplementedError('HU21: AuditoriaService.exportarBitacora');
+    return _api.descargar(
+      ApiConstants.bitacoraExportar,
+      query: _consulta({
+        'formato': formato,
+        'usuario_id': usuarioId,
+        'operacion': operacion,
+        'entidad': entidad,
+        'desde': _soloFecha(desde),
+        'hasta': _soloFecha(hasta),
+      }),
+      nombreBase: 'bitacora_auditoria',
+    );
   }
 
   /// Indice `usuario_id -> nombre` para mostrar nombres en lugar de ids.
@@ -61,8 +83,23 @@ class AuditoriaService {
   /// directorio de usuarios, devolver un mapa vacio (la pantalla muestra el id
   /// abreviado): no debe romper la consulta.
   Future<Map<String, String>> nombresDeUsuario() async {
-    // TODO(HU21): implementar.
-    throw UnimplementedError('HU21: AuditoriaService.nombresDeUsuario');
+    final indice = <String, String>{};
+    final personal = PersonalService();
+    try {
+      var pagina = 1;
+      while (pagina <= 20) {
+        final lote = await personal.usuarios(pagina: pagina);
+        for (final u in lote.elementos) {
+          indice[u.id] = u.nombreCompleto;
+        }
+        if (!lote.hayMasPaginas) break;
+        pagina++;
+      }
+    } on ApiException {
+      // Sin permiso para leer el directorio la bitacora sigue siendo legible:
+      // se muestra el id abreviado en lugar del nombre.
+    }
+    return indice;
   }
 
   // ===================================================================
@@ -70,7 +107,6 @@ class AuditoriaService {
   // ===================================================================
 
   /// Descarta parametros nulos o vacios antes de armar el query string.
-  // ignore: unused_element -- lo usan los bloques de HU21
   Map<String, dynamic> _consulta(Map<String, dynamic> parametros) {
     final limpio = <String, dynamic>{};
     parametros.forEach((clave, valor) {
@@ -82,7 +118,6 @@ class AuditoriaService {
   }
 
   /// El backend valida los rangos como fecha: se manda solo AAAA-MM-DD.
-  // ignore: unused_element -- lo usan los bloques de HU21
   String? _soloFecha(DateTime? fecha) {
     if (fecha == null) return null;
     String dd(int n) => n.toString().padLeft(2, '0');

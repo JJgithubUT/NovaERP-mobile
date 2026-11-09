@@ -196,8 +196,10 @@ class PersonalService {
     String usuarioId,
     List<String> rolesIds,
   ) async {
-    // TODO(HU14): implementar.
-    throw UnimplementedError('HU14: PersonalService.asignarRoles');
+    final json = await _api.post('${ApiConstants.usuarios}$usuarioId/roles/', {
+      'roles': rolesIds,
+    });
+    return RolAsignado.listaDesde(json);
   }
 
   // ===================================================================
@@ -211,8 +213,10 @@ class PersonalService {
   /// "No puede revocar este rol: es el unico administrador activo del tenant."
   /// si es TENANT_ADMIN y no hay otro administrador activo (campo 'rol_id').
   Future<List<RolAsignado>> revocarRol(String usuarioId, String rolId) async {
-    // TODO(HU15): implementar.
-    throw UnimplementedError('HU15: PersonalService.revocarRol');
+    final json = await _api.delete(
+      '${ApiConstants.usuarios}$usuarioId/roles/$rolId/',
+    );
+    return RolAsignado.listaDesde(json);
   }
 
   // ===================================================================
