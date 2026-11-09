@@ -25,6 +25,8 @@ dependencies:
   # Alta de usuarios: el enlace de activacion se entrega una sola vez y hay que
   # hacerselo llegar a la persona (el backend aun no envia correos).
   share_plus: ^10.1.4
+  # Descarga de archivos en web (exportacion de la bitacora).
+  web: ^1.1.0
 
 dev_dependencies:
   flutter_test:

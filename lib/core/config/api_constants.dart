@@ -52,6 +52,10 @@ class ApiConstants {
   /// Catalogo maestro de permisos, agrupado por dominio (selector de roles).
   static const String permisos = '/api/core/permisos/';
 
+  // --- Auditoria (EP04). Bitacora del tenant y su exportacion a CSV o PDF.
+  static const String bitacora = '/api/core/bitacora/';
+  static const String bitacoraExportar = '/api/core/bitacora/export/';
+
   /// Base de la URL de activacion que se comparte al dar de alta un usuario,
   /// p. ej. 'https://erp.miempresa.com/activar'.
   ///

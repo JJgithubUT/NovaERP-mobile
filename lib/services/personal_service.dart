@@ -54,6 +54,36 @@ class PersonalService {
     return DominioPermisos.listaDesde(json);
   }
 
+  /// Roles (con su id) de un usuario, a partir de los NOMBRES que trae el
+  /// directorio. No existe un endpoint para consultar los roles de un usuario,
+  /// asi que se cruzan con el catalogo de roles del tenant; el nombre de un rol
+  /// es unico dentro de la empresa.
+  Future<List<RolAsignado>> resolverRoles(List<String> nombres) async {
+    if (nombres.isEmpty) return const [];
+    final buscados = nombres.toSet();
+    final encontrados = <RolAsignado>[];
+    var pagina = 1;
+    while (true) {
+      final lote = await roles(pagina: pagina);
+      for (final r in lote.elementos) {
+        if (buscados.contains(r.nombre)) {
+          encontrados.add(
+            RolAsignado(
+              id: r.id,
+              nombre: r.nombre,
+              activo: r.activo,
+              esSistema: r.esSistema,
+            ),
+          );
+        }
+      }
+      if (!lote.hayMasPaginas) break;
+      pagina++;
+    }
+    encontrados.sort((a, b) => a.nombre.compareTo(b.nombre));
+    return encontrados;
+  }
+
   // ===================================================================
   // HU05 - Registrar usuario dentro del tenant
   // ===================================================================
@@ -148,6 +178,41 @@ class PersonalService {
   /// POST [ApiConstants.usuarios]{id}/reactivar/
   Future<void> reactivar(String id) async {
     await _api.post('${ApiConstants.usuarios}$id/reactivar/');
+  }
+
+  // ===================================================================
+  // HU14 - Vincular roles a un usuario
+  // ===================================================================
+
+  /// Asigna uno o varios roles ACTIVOS del tenant a un usuario. Devuelve la
+  /// lista resultante de roles del usuario.
+  ///
+  /// POST [ApiConstants.usuarios]{id}/roles/   body: {roles: [rolId, ...]}
+  /// 422 si algun rol no existe, es de otro tenant o esta inactivo, y 422
+  /// "El rol Auditor es incompatible con permisos de creacion, edicion o
+  /// eliminacion." si el conjunto resultante mezcla auditoria con mutacion
+  /// (campo 'roles'). Asignar un rol que ya tiene no falla ni duplica.
+  Future<List<RolAsignado>> asignarRoles(
+    String usuarioId,
+    List<String> rolesIds,
+  ) async {
+    // TODO(HU14): implementar.
+    throw UnimplementedError('HU14: PersonalService.asignarRoles');
+  }
+
+  // ===================================================================
+  // HU15 - Retirar rol a un usuario
+  // ===================================================================
+
+  /// Retira un rol a un usuario. Devuelve la lista resultante de roles.
+  ///
+  /// DELETE [ApiConstants.usuarios]{id}/roles/{rolId}/
+  /// 422 "El usuario debe conservar al menos un rol." si era el unico, y 422
+  /// "No puede revocar este rol: es el unico administrador activo del tenant."
+  /// si es TENANT_ADMIN y no hay otro administrador activo (campo 'rol_id').
+  Future<List<RolAsignado>> revocarRol(String usuarioId, String rolId) async {
+    // TODO(HU15): implementar.
+    throw UnimplementedError('HU15: PersonalService.revocarRol');
   }
 
   // ===================================================================

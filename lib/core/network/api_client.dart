@@ -1,7 +1,11 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 
 import '../config/api_constants.dart';
 import 'api_exception.dart';
+import 'archivo_descargado.dart';
 import 'token_storage.dart';
 
 /// Cliente HTTP unico de la app.
@@ -89,6 +93,48 @@ class ApiClient {
 
   Future<Map<String, dynamic>> delete(String endpoint) async {
     return _ejecutar(() => _dio.delete(endpoint));
+  }
+
+  /// Descarga un archivo (CSV, PDF...) en lugar de un objeto JSON.
+  ///
+  /// [nombreBase] es el nombre sugerido sin extension: el backend lo manda en
+  /// `Content-Disposition`, pero en web ese encabezado no es legible desde otro
+  /// origen, asi que la extension se deduce del tipo de contenido.
+  Future<ArchivoDescargado> descargar(
+    String endpoint, {
+    Map<String, dynamic>? query,
+    String nombreBase = 'archivo',
+  }) async {
+    try {
+      final respuesta = await _dio.get<List<int>>(
+        endpoint,
+        queryParameters: query,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      final tipo = respuesta.headers.value('content-type') ?? 'application/octet-stream';
+      final extension = tipo.contains('pdf')
+          ? 'pdf'
+          : tipo.contains('csv')
+          ? 'csv'
+          : 'bin';
+      return ArchivoDescargado(
+        bytes: Uint8List.fromList(respuesta.data ?? const []),
+        nombre: '$nombreBase.$extension',
+        tipo: tipo.split(';').first,
+      );
+    } on DioException catch (e) {
+      // Con responseType bytes, el cuerpo de un error tambien llega en bytes:
+      // se decodifica para que _traducir lea el {detail} de siempre.
+      final cuerpo = e.response?.data;
+      if (cuerpo is List<int>) {
+        try {
+          e.response!.data = jsonDecode(utf8.decode(cuerpo));
+        } catch (_) {
+          // No era JSON: se deja como esta.
+        }
+      }
+      throw _traducir(e);
+    }
   }
 
   Future<Map<String, dynamic>> _ejecutar(

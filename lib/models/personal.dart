@@ -217,6 +217,15 @@ class RolAsignado {
     activo: json['activo'] == true,
     esSistema: json['es_sistema'] == true,
   );
+
+  /// Lee el sobre que devuelven asignar y revocar roles:
+  /// `{"usuario_id": ..., "roles": [{id, nombre, activo, es_sistema}]}`.
+  static List<RolAsignado> listaDesde(Map<String, dynamic> json) {
+    return (json['roles'] as List? ?? const [])
+        .whereType<Map>()
+        .map((r) => RolAsignado.fromJson(Map<String, dynamic>.from(r)))
+        .toList();
+  }
 }
 
 /// Resultado del alta de un usuario (RF-05).

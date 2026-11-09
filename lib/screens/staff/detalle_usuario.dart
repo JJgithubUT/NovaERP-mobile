@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../core/config/app_colors.dart';
+import '../../core/network/api_exception.dart';
 import '../../core/utils/formato.dart';
 import '../../models/personal.dart';
+import '../../services/personal_service.dart';
+import 'widgets/accion_asignar_roles.dart';
 import 'widgets/accion_editar_usuario.dart';
 import 'widgets/accion_suspension.dart';
+import 'widgets/fila_rol_usuario.dart';
 
 /// Ficha de un usuario con las acciones administrativas sobre el.
 ///
@@ -14,6 +18,8 @@ import 'widgets/accion_suspension.dart';
 /// sus propios archivos y esta ficha solo las coloca:
 ///   HU07 -> widgets/accion_editar_usuario.dart
 ///   HU08 -> widgets/accion_suspension.dart
+///   HU14 -> widgets/accion_asignar_roles.dart
+///   HU15 -> widgets/fila_rol_usuario.dart
 Future<bool> abrirDetalleUsuario(
   BuildContext context,
   UsuarioDirectorio usuario,
@@ -34,8 +40,47 @@ class _DetalleUsuario extends StatefulWidget {
 }
 
 class _DetalleUsuarioState extends State<_DetalleUsuario> {
+  final _servicio = PersonalService();
+
   late String _estado = widget.usuario.estado;
   bool _huboCambios = false;
+
+  /// Roles del usuario con su id. Nulo mientras se cargan.
+  List<RolAsignado>? _roles;
+  String? _errorRoles;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarRoles();
+  }
+
+  Future<void> _cargarRoles() async {
+    setState(() {
+      _roles = null;
+      _errorRoles = null;
+    });
+    try {
+      final roles = await _servicio.resolverRoles(widget.usuario.roles);
+      if (!mounted) return;
+      setState(() => _roles = roles);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorRoles = e.esPermisoDenegado
+            ? 'No tiene permiso para consultar los roles.'
+            : 'No fue posible cargar los roles del usuario.';
+      });
+    }
+  }
+
+  /// Las acciones de roles (HU14 y HU15) avisan aqui con la lista resultante.
+  void _alCambiarRoles(List<RolAsignado> nuevos) {
+    setState(() {
+      _roles = nuevos;
+      _huboCambios = true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,13 +165,6 @@ class _DetalleUsuarioState extends State<_DetalleUsuario> {
                   valor: usuario.telefono ?? '—',
                 ),
                 _Fila(
-                  icono: Icons.badge_outlined,
-                  titulo: 'Roles',
-                  valor: usuario.roles.isEmpty
-                      ? 'Sin roles'
-                      : usuario.roles.join(' · '),
-                ),
-                _Fila(
                   icono: Icons.schedule_outlined,
                   titulo: 'Último acceso',
                   valor: usuario.ultimoAcceso == null
@@ -138,6 +176,60 @@ class _DetalleUsuarioState extends State<_DetalleUsuario> {
                   titulo: 'Alta',
                   valor: Formato.fechaHora(usuario.creadoEn),
                 ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+            _Seccion(
+              titulo: 'Roles',
+              hijos: [
+                if (_errorRoles != null)
+                  ListTile(
+                    title: Text(
+                      _errorRoles!,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.warning,
+                      ),
+                    ),
+                    trailing: TextButton(
+                      onPressed: _cargarRoles,
+                      child: const Text('Reintentar'),
+                    ),
+                  )
+                else if (_roles == null)
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
+                      ),
+                    ),
+                  )
+                else ...[
+                  if (_roles!.isEmpty)
+                    const ListTile(
+                      dense: true,
+                      title: Text(
+                        'Sin roles',
+                        style: TextStyle(fontSize: 13, color: AppColors.grey),
+                      ),
+                    ),
+                  for (final rol in _roles!)
+                    FilaRolUsuario(
+                      usuario: usuario,
+                      rol: rol,
+                      esUnico: _roles!.length == 1,
+                      onRoles: _alCambiarRoles,
+                    ),
+                  AccionAsignarRoles(
+                    usuario: usuario,
+                    rolesActuales: _roles!,
+                    onRoles: _alCambiarRoles,
+                  ),
+                ],
               ],
             ),
 
