@@ -110,8 +110,8 @@ class PersonalService {
     String id,
     Map<String, dynamic> cambios,
   ) async {
-    // TODO(HU07): implementar.
-    throw UnimplementedError('HU07: PersonalService.editarUsuario');
+    final json = await _api.patch('${ApiConstants.usuarios}$id/', cambios);
+    return UsuarioCreado.fromJson(json);
   }
 
   // ===================================================================
@@ -122,7 +122,6 @@ class PersonalService {
   ///
   /// POST [ApiConstants.usuarios]{id}/suspender/
   Future<void> suspender(String id) async {
-    // TODO(HU08): implementar.
     await _api.post('${ApiConstants.usuarios}$id/suspender/');
   }
 
@@ -130,7 +129,6 @@ class PersonalService {
   ///
   /// POST [ApiConstants.usuarios]{id}/reactivar/
   Future<void> reactivar(String id) async {
-    // TODO(HU08): implementar.
     await _api.post('${ApiConstants.usuarios}$id/reactivar/');
   }
 

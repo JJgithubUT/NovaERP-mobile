@@ -131,6 +131,15 @@ class _FormularioUsuarioState extends State<_FormularioUsuario> {
         _error = e.mensaje;
         _campoConError = e.campo;
       });
+    } catch (_) {
+      // Cualquier otro fallo (red caida, respuesta inesperada): el formulario
+      // nunca debe quedarse girando.
+      if (!mounted) return;
+      setState(() {
+        _enviando = false;
+        _error = 'No se pudo guardar. Revise su conexión e intente de nuevo.';
+        _campoConError = null;
+      });
     }
   }
 
