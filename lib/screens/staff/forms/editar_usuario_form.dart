@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/config/app_colors.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/widgets/campo_formulario.dart';
 import '../../../models/personal.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../services/personal_service.dart';
 import '../widgets/enlace_activacion.dart';
 
@@ -58,6 +60,11 @@ class _FormularioEdicionState extends State<_FormularioEdicion> {
   String? _error;
   String? _campoConError;
 
+  /// El backend solo deja que cada quien edite su nombre y su telefono; correo,
+  /// puesto y departamento los cambia un administrador sobre otra persona.
+  bool get _esPropio =>
+      context.read<AuthProvider>().contexto?.usuario.id == widget.usuario.id;
+
   @override
   void dispose() {
     for (final c in [_correo, _nombre, _telefono, _puesto, _departamento]) {
@@ -74,11 +81,13 @@ class _FormularioEdicionState extends State<_FormularioEdicion> {
       if (nuevo.trim() != (actual ?? '')) cambios[clave] = nuevo.trim();
     }
 
-    comparar('correo', _correo.text, u.correo);
     comparar('nombre_completo', _nombre.text, u.nombreCompleto);
     comparar('telefono', _telefono.text, u.telefono);
-    comparar('puesto', _puesto.text, u.puesto);
-    comparar('departamento', _departamento.text, u.departamento);
+    if (!_esPropio) {
+      comparar('correo', _correo.text, u.correo);
+      comparar('puesto', _puesto.text, u.puesto);
+      comparar('departamento', _departamento.text, u.departamento);
+    }
     return cambios;
   }
 
@@ -162,6 +171,15 @@ class _FormularioEdicionState extends State<_FormularioEdicion> {
         _error = _mensajeDe(e);
         _campoConError = e.campo;
       });
+    } catch (_) {
+      // Cualquier otro fallo (red caida, respuesta inesperada, un error de
+      // programacion): el formulario nunca debe quedarse girando.
+      if (!mounted) return;
+      setState(() {
+        _enviando = false;
+        _error = 'No se pudo guardar. Revise su conexión e intente de nuevo.';
+        _campoConError = null;
+      });
     }
   }
 
@@ -188,7 +206,7 @@ class _FormularioEdicionState extends State<_FormularioEdicion> {
               CampoFormulario(
                 etiqueta: 'Correo electrónico',
                 controlador: _correo,
-                habilitado: !_enviando,
+                habilitado: !_enviando && !_esPropio,
                 tipo: TextInputType.emailAddress,
                 resaltado: _campoConError == 'correo',
                 validador: (v) {
@@ -222,15 +240,24 @@ class _FormularioEdicionState extends State<_FormularioEdicion> {
               CampoFormulario(
                 etiqueta: 'Puesto (opcional)',
                 controlador: _puesto,
-                habilitado: !_enviando,
+                habilitado: !_enviando && !_esPropio,
                 resaltado: _campoConError == 'puesto',
               ),
               CampoFormulario(
                 etiqueta: 'Departamento (opcional)',
                 controlador: _departamento,
-                habilitado: !_enviando,
+                habilitado: !_enviando && !_esPropio,
                 resaltado: _campoConError == 'departamento',
               ),
+              if (_esPropio)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    'Solo puede modificar su nombre y su teléfono. El correo, '
+                    'el puesto y el departamento los cambia un administrador.',
+                    style: TextStyle(fontSize: 12.5, color: AppColors.grey),
+                  ),
+                ),
               if (_error != null) ...[
                 const SizedBox(height: 4),
                 Text(
