@@ -11,7 +11,7 @@ import '../widgets/enlace_activacion.dart';
 ///
 /// Al terminar muestra el enlace de activacion, que es la unica vez que el
 /// backend lo entrega en claro.
-Future<bool> abrirAltaUsuario(BuildContext context) async {
+Future<bool> abrirAltaUsuario(BuildContext context) asy nc {
   final creado = await Navigator.of(context).push<bool>(
     MaterialPageRoute(
       fullscreenDialog: true,
