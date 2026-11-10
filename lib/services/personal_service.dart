@@ -44,7 +44,7 @@ class PersonalService {
   /// fijarla consumiendo el token de activacion que devuelve esta llamada.
   ///
   /// POST [ApiConstants.usuarios]
-  ///   body: {correo, nombre_completo, telefono?, puesto?, departamento?, roles}
+  /// body: {correo, nombre_completo, telefono?, puesto?, departamento?, roles}
   Future<UsuarioCreado> crearUsuario({
     required String correo,
     required String nombreCompleto,
@@ -72,7 +72,7 @@ class PersonalService {
   /// Directorio paginado. Busca en nombre, correo y puesto.
   ///
   /// GET [ApiConstants.usuarios]
-  ///   query: page, search, estado, departamento, rol, orden, desc
+  /// query: page, search, estado, departamento, rol, orden, desc
   /// El backend aplica solo el filtro de tenant.
   Future<Paginado<UsuarioDirectorio>> usuarios({
     int pagina = 1,
@@ -105,13 +105,13 @@ class PersonalService {
   /// Edicion parcial de datos del usuario. Cambiar el correo devuelve un nuevo
   /// token, esta vez de verificacion.
   ///
-  /// PATCH [ApiConstants.usuarios]{id}/   body: solo los campos que cambian
+  /// PATCH [ApiConstants.usuarios]{id}/ body: solo los campos que cambian
   Future<UsuarioCreado> editarUsuario(
     String id,
     Map<String, dynamic> cambios,
   ) async {
-    // TODO(HU07): implementar.
-    throw UnimplementedError('HU07: PersonalService.editarUsuario');
+    final json = await _api.patch('${ApiConstants.usuarios}$id/', cambios);
+    return UsuarioCreado.fromJson(json);
   }
 
   // ===================================================================
@@ -122,7 +122,6 @@ class PersonalService {
   ///
   /// POST [ApiConstants.usuarios]{id}/suspender/
   Future<void> suspender(String id) async {
-    // TODO(HU08): implementar.
     await _api.post('${ApiConstants.usuarios}$id/suspender/');
   }
 
@@ -130,7 +129,6 @@ class PersonalService {
   ///
   /// POST [ApiConstants.usuarios]{id}/reactivar/
   Future<void> reactivar(String id) async {
-    // TODO(HU08): implementar.
     await _api.post('${ApiConstants.usuarios}$id/reactivar/');
   }
 
