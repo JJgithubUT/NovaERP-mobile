@@ -53,6 +53,10 @@ class ListaPaginadaState<T> extends State<ListaPaginada<T>> {
   final _scrollController = ScrollController();
   final _elementos = <T>[];
 
+  /// Sube con cada recarga. Una respuesta que llega con otra generacion es de
+  /// una consulta anterior (otra busqueda u otro filtro) y se descarta.
+  int _generacion = 0;
+
   int _pagina = 0;
   int _total = 0;
   bool _hayMas = true;
@@ -86,6 +90,7 @@ class ListaPaginadaState<T> extends State<ListaPaginada<T>> {
 
   Future<void> _cargarSiguientePagina() async {
     if (_cargando || !_hayMas) return;
+    final generacion = _generacion;
     setState(() {
       _cargando = true;
       _error = null;
@@ -93,7 +98,7 @@ class ListaPaginadaState<T> extends State<ListaPaginada<T>> {
 
     try {
       final lote = await widget.cargar(_pagina + 1);
-      if (!mounted) return;
+      if (!mounted || generacion != _generacion) return;
       setState(() {
         _pagina = lote.pagina;
         _total = lote.total;
@@ -105,7 +110,7 @@ class ListaPaginadaState<T> extends State<ListaPaginada<T>> {
       // con el acumulado ya actualizado.
       widget.onDatosCargados?.call(List.unmodifiable(_elementos), _total);
     } on ApiException catch (e) {
-      if (!mounted) return;
+      if (!mounted || generacion != _generacion) return;
       setState(() {
         _error = e;
         _cargando = false;
@@ -114,15 +119,47 @@ class ListaPaginadaState<T> extends State<ListaPaginada<T>> {
   }
 
   /// Vuelve a empezar desde la pagina 1 conservando la posicion del scroll en
-  /// el tope. Se llama tras crear o modificar un registro.
+  /// el tope. Se llama tras crear o modificar un registro, o al cambiar la
+  /// busqueda o los filtros.
+  ///
+  /// Si hay una carga en curso se abandona: su respuesta ya no corresponde a
+  /// lo que se pidio y se descarta.
   Future<void> recargar() async {
+    _generacion++;
     setState(() {
       _elementos.clear();
       _pagina = 0;
       _hayMas = true;
+      _cargando = false;
       _error = null;
     });
     await _cargarSiguientePagina();
+  }
+
+  /// Vuelve a pedir la primera pagina SIN vaciar la lista ni mostrar el
+  /// indicador de carga: lo que ya se ve se queda hasta que llegan los datos
+  /// nuevos. Para refrescos de fondo (por ejemplo al volver a la app), donde
+  /// vaciar la lista seria un parpadeo molesto. Si falla, se conserva lo que ya
+  /// se ve. No hace nada si ya hay una carga en curso.
+  Future<void> actualizar() async {
+    if (_cargando) return;
+    final generacion = _generacion;
+    try {
+      final lote = await widget.cargar(1);
+      if (!mounted || generacion != _generacion || _cargando) return;
+      setState(() {
+        _elementos
+          ..clear()
+          ..addAll(lote.elementos);
+        _pagina = lote.pagina;
+        _total = lote.total;
+        _hayMas = lote.hayMasPaginas;
+        _error = null;
+      });
+      widget.onDatosCargados?.call(List.unmodifiable(_elementos), _total);
+    } on ApiException {
+      // Se conserva lo que ya estaba en pantalla.
+    }
   }
 
   @override

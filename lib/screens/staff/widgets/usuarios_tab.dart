@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/config/app_colors.dart';
@@ -15,10 +17,22 @@ class UsuariosTab extends StatefulWidget {
   State<UsuariosTab> createState() => UsuariosTabState();
 }
 
-class UsuariosTabState extends State<UsuariosTab> {
+class UsuariosTabState extends State<UsuariosTab>
+    with WidgetsBindingObserver {
+  /// Espera tras la ultima tecla antes de consultar. Sin esto cada letra seria
+  /// una peticion; con esto el filtro se aplica solo cuando el usuario se
+  /// detiene, sin tener que pulsar Enter.
+  static const _esperaBusqueda = Duration(milliseconds: 350);
+
+  /// Al volver a la app no se refresca si la lista se cargo hace menos que esto:
+  /// en web el "volver" se dispara con cualquier cambio de foco.
+  static const _minimoEntreRefrescos = Duration(seconds: 20);
+
   final _servicio = PersonalService();
+  DateTime _ultimaCarga = DateTime.now();
   final _listaKey = GlobalKey<ListaPaginadaState<UsuarioDirectorio>>();
   final _busquedaController = TextEditingController();
+  Timer? _temporizador;
 
   String _busqueda = '';
   String? _estado;
@@ -29,88 +43,148 @@ class UsuariosTabState extends State<UsuariosTab> {
     'suspendido': 'Suspendidos',
   };
 
+  bool get _hayFiltros => _busqueda.isNotEmpty || _estado != null;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _temporizador?.cancel();
     _busquedaController.dispose();
     super.dispose();
   }
 
-  void recargar() => _listaKey.currentState?.recargar();
+  /// Al volver a la app (o a la pestana del navegador) se actualiza el
+  /// directorio en segundo plano: pudo cambiar desde otro dispositivo o desde
+  /// la web. Es silencioso (la lista no se vacia) y a lo mas una vez cada
+  /// [_minimoEntreRefrescos].
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    if (estado != AppLifecycleState.resumed) return;
+    final ahora = DateTime.now();
+    if (ahora.difference(_ultimaCarga) < _minimoEntreRefrescos) return;
+    _ultimaCarga = ahora;
+    _listaKey.currentState?.actualizar();
+  }
+
+  /// Vuelve a pedir la primera pagina con la busqueda y el filtro vigentes.
+  /// La llama StaffScreen tras un alta y la ficha tras editar o suspender.
+  void recargar() {
+    _ultimaCarga = DateTime.now();
+    _listaKey.currentState?.recargar();
+  }
+
+  void _alEscribir(String valor) {
+    // Refresca el boton de limpiar.
+    setState(() {});
+    _temporizador?.cancel();
+    _temporizador = Timer(_esperaBusqueda, () => _aplicarBusqueda(valor));
+  }
+
+  void _aplicarBusqueda(String valor) {
+    final limpio = valor.trim();
+    if (limpio == _busqueda) return;
+    setState(() => _busqueda = limpio);
+    recargar();
+  }
+
+  void _limpiarBusqueda() {
+    _temporizador?.cancel();
+    _busquedaController.clear();
+    _aplicarBusqueda('');
+  }
+
+  void _elegirEstado(String? estado) {
+    if (estado == _estado) return;
+    setState(() => _estado = estado);
+    recargar();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListaPaginada<UsuarioDirectorio>(
-      key: ValueKey('usuarios-$_busqueda-$_estado'),
-      cargar: (pagina) => _servicio.usuarios(
-        pagina: pagina,
-        busqueda: _busqueda.isEmpty ? null : _busqueda,
-        estado: _estado,
-      ),
-      mensajeVacio: _busqueda.isEmpty
-          ? 'No hay usuarios con ese criterio'
-          : 'Sin resultados para "$_busqueda"',
-      iconoVacio: Icons.person_search_outlined,
-      cabecera: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: TextField(
-              controller: _busquedaController,
-              decoration: InputDecoration(
-                hintText: 'Buscar por nombre, correo o puesto',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _busqueda.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          _busquedaController.clear();
-                          setState(() => _busqueda = '');
-                        },
-                      ),
-                filled: true,
-                fillColor: AppColors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: AppColors.grey.withValues(alpha: 0.3),
-                  ),
+    // El buscador y los filtros viven FUERA de la lista: si estuvieran dentro,
+    // cada busqueda reconstruiria el campo de texto y perderia el foco.
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: TextField(
+            controller: _busquedaController,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Buscar por nombre, correo o puesto',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _busquedaController.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Limpiar búsqueda',
+                      icon: const Icon(Icons.close),
+                      onPressed: _limpiarBusqueda,
+                    ),
+              filled: true,
+              fillColor: AppColors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppColors.grey.withValues(alpha: 0.3),
                 ),
               ),
-              onSubmitted: (valor) => setState(() => _busqueda = valor.trim()),
             ),
+            onChanged: _alEscribir,
+            onSubmitted: (valor) {
+              _temporizador?.cancel();
+              _aplicarBusqueda(valor);
+            },
           ),
-          SizedBox(
-            height: 44,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: [
+        ),
+        SizedBox(
+          height: 44,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            children: [
+              _Pastilla(
+                etiqueta: 'Todos',
+                activa: _estado == null,
+                onTap: () => _elegirEstado(null),
+              ),
+              for (final e in _estados.entries)
                 _Pastilla(
-                  etiqueta: 'Todos',
-                  activa: _estado == null,
-                  onTap: () => setState(() => _estado = null),
+                  etiqueta: e.value,
+                  activa: _estado == e.key,
+                  onTap: () => _elegirEstado(e.key),
                 ),
-                for (final e in _estados.entries)
-                  _Pastilla(
-                    etiqueta: e.value,
-                    activa: _estado == e.key,
-                    onTap: () => setState(() => _estado = e.key),
-                  ),
-              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Expanded(
+          child: ListaPaginada<UsuarioDirectorio>(
+            key: _listaKey,
+            cargar: (pagina) => _servicio.usuarios(
+              pagina: pagina,
+              busqueda: _busqueda.isEmpty ? null : _busqueda,
+              estado: _estado,
+            ),
+            mensajeVacio: _hayFiltros
+                ? 'No se encontraron usuarios para los criterios seleccionados.'
+                : 'Aún no hay usuarios registrados.',
+            iconoVacio: Icons.person_search_outlined,
+            itemBuilder: (contexto, usuario) => _FilaUsuario(
+              usuario: usuario,
+              onAbrir: () async {
+                final cambio = await abrirDetalleUsuario(contexto, usuario);
+                if (cambio) recargar();
+              },
             ),
           ),
-          const SizedBox(height: 4),
-        ],
-      ),
-      itemBuilder: (contexto, usuario) => _FilaUsuario(
-        usuario: usuario,
-        onAbrir: () async {
-          final cambio = await abrirDetalleUsuario(contexto, usuario);
-          if (cambio) recargar();
-        },
-      ),
+        ),
+      ],
     );
   }
 }
