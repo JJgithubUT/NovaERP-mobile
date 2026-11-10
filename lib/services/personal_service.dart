@@ -27,13 +27,36 @@ class PersonalService {
   Future<List<Rol>> rolesActivos() async {
     final acumulados = <Rol>[];
     var pagina = 1;
+
     while (true) {
       final lote = await roles(pagina: pagina);
       acumulados.addAll(lote.elementos.where((r) => r.activo));
+
       if (!lote.hayMasPaginas) break;
       pagina++;
     }
+
     return acumulados;
+  }
+
+  // ===================================================================
+  // HU13 - Eliminar o desactivar un rol personalizado
+  // ===================================================================
+
+  /// Desactiva un rol personalizado.
+  ///
+  /// POST [ApiConstants.roles]{id}/desactivar/
+  Future<void> desactivarRol(String id, {bool confirmado = false}) async {
+    await _api.post('${ApiConstants.roles}$id/desactivar/', {
+      if (confirmado) 'confirmado': true,
+    });
+  }
+
+  /// Reactiva un rol personalizado.
+  ///
+  /// POST [ApiConstants.roles]{id}/reactivar/
+  Future<void> reactivarRol(String id) async {
+    await _api.post('${ApiConstants.roles}$id/reactivar/');
   }
 
   // ===================================================================
@@ -62,6 +85,7 @@ class PersonalService {
         'departamento': departamento,
       if (rolesIds.isNotEmpty) 'roles': rolesIds,
     });
+
     return UsuarioCreado.fromJson(json);
   }
 
@@ -95,6 +119,7 @@ class PersonalService {
         if (descendente) 'desc': 'true',
       }),
     );
+
     return Paginado.fromJson(json, UsuarioDirectorio.fromJson);
   }
 
@@ -102,15 +127,15 @@ class PersonalService {
   // HU07 - Editar usuario
   // ===================================================================
 
-  /// Edicion parcial de datos del usuario. Cambiar el correo devuelve un nuevo
-  /// token, esta vez de verificacion.
+  /// Edicion parcial de datos del usuario.
   ///
-  /// PATCH [ApiConstants.usuarios]{id}/ body: solo los campos que cambian
+  /// PATCH [ApiConstants.usuarios]{id}/
   Future<UsuarioCreado> editarUsuario(
     String id,
     Map<String, dynamic> cambios,
   ) async {
     final json = await _api.patch('${ApiConstants.usuarios}$id/', cambios);
+
     return UsuarioCreado.fromJson(json);
   }
 
@@ -139,11 +164,14 @@ class PersonalService {
   /// Descarta parametros nulos o vacios antes de armar el query string.
   Map<String, dynamic> _consulta(Map<String, dynamic> parametros) {
     final limpio = <String, dynamic>{};
+
     parametros.forEach((clave, valor) {
       if (valor == null) return;
       if (valor is String && valor.trim().isEmpty) return;
+
       limpio[clave] = valor;
     });
+
     return limpio;
   }
 }
