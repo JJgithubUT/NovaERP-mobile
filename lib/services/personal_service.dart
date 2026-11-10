@@ -169,6 +169,15 @@ class PersonalService {
     await _api.post('${ApiConstants.usuarios}$id/reactivar/');
   }
 
+      // TODO(HU14): implementar.
+  Future<void> vincularRol(String id) async {
+    // TODO(HU14): implementar.
+     final json = await _api.post('${ApiConstants.usuarios}$usuarioId/roles/', {
+      'roles': rolesIds,
+  });
+    return RolAsignado.listaDesde(json);
+    }
+
   // ===================================================================
   // BASE (ya hecho)
   // ===================================================================
