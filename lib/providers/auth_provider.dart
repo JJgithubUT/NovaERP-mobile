@@ -129,8 +129,26 @@ class AuthProvider with ChangeNotifier {
   /// AuthService.obtenerContexto y pasar a [EstadoSesion.activa]. Ante un
   /// ApiException usar [_fallar] y devolver false.
   Future<bool> validarOtp(String codigo) async {
-    // TODO(HU16): implementar.
-    throw UnimplementedError('HU16: AuthProvider.validarOtp');
+    final reto = _reto;
+    if (reto == null) {
+      _fallar('La sesion de ingreso expiro. Vuelva a iniciar sesion.');
+      return false;
+    }
+
+    _empezarCarga();
+    try {
+      final token = await _authService.validarOtp(reto.reto, codigo);
+      await _tokenStorage.guardar(token);
+
+      _contexto = await _authService.obtenerContexto();
+      _reto = null;
+      _cargando = false;
+      _fijarEstado(EstadoSesion.activa);
+      return true;
+    } on ApiException catch (e) {
+      _fallar(e.mensaje);
+      return false;
+    }
   }
 
   /// Vuelve del paso de OTP a la pantalla de credenciales. Descarta el reto:
@@ -161,13 +179,31 @@ class AuthProvider with ChangeNotifier {
   /// seria peor). Terminar con [_limpiarSesionLocalAsync]; AuthGate lleva solo
   /// al login.
   Future<void> cerrarSesion() async {
-    // TODO(HU17): implementar.
-    throw UnimplementedError('HU17: AuthProvider.cerrarSesion');
+    _empezarCarga();
+    try {
+      await _authService.cerrarSesion();
+    } catch (_) {
+      // Sin red o token ya vencido: se cierra igual en el dispositivo.
+    }
+    _cargando = false;
+    await _limpiarSesionLocalAsync();
   }
 
   // ===================================================================
   // BASE (ya hecho)
   // ===================================================================
+
+  /// HU09: vuelve a pedir el perfil a `/api/core/me/`. Devuelve false si falla;
+  /// en ese caso conserva el contexto que ya tenia.
+  Future<bool> recargarPerfil() async {
+    try {
+      _contexto = await _authService.obtenerContexto();
+      notifyListeners();
+      return true;
+    } on ApiException {
+      return false;
+    }
+  }
 
   void limpiarError() {
     if (_error == null) return;

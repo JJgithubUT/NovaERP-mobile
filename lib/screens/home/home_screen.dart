@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/config/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../profile/profile_screen.dart';
+import '../staff/staff_screen.dart';
 
 /// Contenedor principal tras el login: panel de inicio y perfil.
 ///
@@ -23,32 +24,71 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
+    // Las secciones salen de los permisos efectivos, no del nombre del rol.
+    final secciones = <_Seccion>[
+      const _Seccion(
+        etiqueta: 'Inicio',
+        icono: Icons.home_outlined,
+        iconoActivo: Icons.home,
+        pantalla: _PanelInicio(),
+      ),
+      if (auth.vePersonal)
+        const _Seccion(
+          etiqueta: 'Personal',
+          icono: Icons.people_alt_outlined,
+          iconoActivo: Icons.people_alt,
+          pantalla: StaffScreen(),
+        ),
+      const _Seccion(
+        etiqueta: 'Perfil',
+        icono: Icons.account_circle_outlined,
+        iconoActivo: Icons.account_circle,
+        pantalla: ProfileScreen(),
+      ),
+    ];
+
+    // Si los permisos cambian y desaparece una seccion, el indice no se sale.
+    final indice = _indice < secciones.length ? _indice : 0;
+
     return Scaffold(
       body: IndexedStack(
-        index: _indice,
-        children: const [_PanelInicio(), ProfileScreen()],
+        index: indice,
+        children: [for (final s in secciones) s.pantalla],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _indice,
+        currentIndex: indice,
+        type: BottomNavigationBarType.fixed,
         backgroundColor: AppColors.white,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: AppColors.grey,
         onTap: (i) => setState(() => _indice = i),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'Inicio',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle_outlined),
-            activeIcon: Icon(Icons.account_circle),
-            label: 'Perfil',
-          ),
+        items: [
+          for (final s in secciones)
+            BottomNavigationBarItem(
+              icon: Icon(s.icono),
+              activeIcon: Icon(s.iconoActivo),
+              label: s.etiqueta,
+            ),
         ],
       ),
     );
   }
+}
+
+class _Seccion {
+  const _Seccion({
+    required this.etiqueta,
+    required this.icono,
+    required this.iconoActivo,
+    required this.pantalla,
+  });
+
+  final String etiqueta;
+  final IconData icono;
+  final IconData iconoActivo;
+  final Widget pantalla;
 }
 
 class _PanelInicio extends StatelessWidget {

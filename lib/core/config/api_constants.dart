@@ -44,4 +44,27 @@ class ApiConstants {
 
   /// Ruta de una sesion concreta, por su jti (DELETE = logout remoto).
   static String sesion(String jti) => '/api/core/sesiones/$jti/';
+
+  // --- Personal (EP01). Directorio, alta, edicion y estado de usuarios.
+  static const String usuarios = '/api/core/usuarios/';
+  static const String roles = '/api/core/roles/';
+
+  /// Base de la URL de activacion que se comparte al dar de alta un usuario,
+  /// p. ej. 'https://erp.miempresa.com/activar'.
+  ///
+  /// El backend entrega el token pero NO arma la URL: la pantalla de activacion
+  /// vive en el frontend web. Sin este valor la app comparte el token solo, en
+  /// vez de inventar un dominio que no existe.
+  static const String activacionUrlBase = String.fromEnvironment(
+    'ACTIVACION_URL_BASE',
+  );
+
+  /// URL completa de activacion, o null si no hay base configurada.
+  static String? enlaceActivacion(String token) {
+    if (activacionUrlBase.isEmpty) return null;
+    final base = activacionUrlBase.endsWith('/')
+        ? activacionUrlBase.substring(0, activacionUrlBase.length - 1)
+        : activacionUrlBase;
+    return '$base?token=$token';
+  }
 }
