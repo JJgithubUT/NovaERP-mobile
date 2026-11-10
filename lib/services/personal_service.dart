@@ -40,6 +40,18 @@ class PersonalService {
   }
 
   // ===================================================================
+  // HU12 - Editar rol personalizado
+  // ===================================================================
+
+  /// Edición parcial o total de un rol personalizado.
+  ///
+  /// PATCH [ApiConstants.roles]{id}/
+  Future<Rol> editarRol(String id, Map<String, dynamic> cambios) async {
+    final json = await _api.patch('${ApiConstants.roles}$id/', cambios);
+    return Rol.fromJson(json);
+  }
+
+  // ===================================================================
   // HU13 - Eliminar o desactivar un rol personalizado
   // ===================================================================
 
