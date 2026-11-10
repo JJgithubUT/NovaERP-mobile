@@ -138,6 +138,13 @@ class PersonalService {
   // BASE (ya hecho)
   // ===================================================================
 
+  // TODO(HU10): implementar.
+  final json = await _api.post(ApiConstants.roles, {
+      'nombre': nombre,
+      'permisos': permisos.toList(),
+    });
+    return Rol.fromJson(json)
+
   /// Descarta parametros nulos o vacios antes de armar el query string.
   Map<String, dynamic> _consulta(Map<String, dynamic> parametros) {
     final limpio = <String, dynamic>{};
