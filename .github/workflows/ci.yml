@@ -2,14 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - feature/*
-      - hotfix/*
+    branches: [main, 'feature/*', 'hotfix/*']
   pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [main]
 
 jobs:
   build:
@@ -18,15 +13,27 @@ jobs:
       - name: Checkout the code
         uses: actions/checkout@v4
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          channel: stable
-          cache: true
+          node-version: '20'
 
       - name: Install dependencies
-        run: flutter pub get
+        run: npm install
 
       - name: Run tests
-        # Las pruebas 'backend' necesitan un servidor NovaERP (ver dart_test.yaml).
-        run: flutter test --exclude-tags backend
+        run: npm test
+
+      - name: Notify Slack of Success
+        if: success()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"✅ Build successful on branch ${{ github.ref_name }}!"}' \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack of Failure
+        if: failure()
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"❌ Build failed on branch ${{ github.ref_name }}."}' \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
