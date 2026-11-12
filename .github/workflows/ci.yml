@@ -5,6 +5,8 @@ on:
     branches: [main, 'feature/*', 'hotfix/*']
   pull_request:
     branches: [main]
+  repository_dispatch:
+    types: [trello_review]
 
 jobs:
   build:
@@ -37,3 +39,31 @@ jobs:
           curl -X POST -H 'Content-type: application/json' \
           --data '{"text":"❌ Build failed on branch ${{ github.ref_name }}."}' \
           ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Trello - build exitosa (comentar y mover a Completado)
+        if: success() && github.event_name == 'repository_dispatch'
+        env:
+          CARD_ID: ${{ github.event.client_payload.card_id }}
+          KEY: ${{ secrets.TRELLO_KEY }}
+          TOKEN: ${{ secrets.TRELLO_TOKEN }}
+          LIST: ${{ secrets.TRELLO_DONE_LIST_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -s -X POST "https://api.trello.com/1/cards/$CARD_ID/actions/comments" \
+            --data-urlencode "key=$KEY" --data-urlencode "token=$TOKEN" \
+            --data-urlencode "text=✅ Build exitosa: $RUN_URL"
+          curl -s -X PUT "https://api.trello.com/1/cards/$CARD_ID" \
+            --data-urlencode "key=$KEY" --data-urlencode "token=$TOKEN" \
+            --data-urlencode "idList=$LIST"
+
+      - name: Trello - build fallida (solo comentar)
+        if: failure() && github.event_name == 'repository_dispatch'
+        env:
+          CARD_ID: ${{ github.event.client_payload.card_id }}
+          KEY: ${{ secrets.TRELLO_KEY }}
+          TOKEN: ${{ secrets.TRELLO_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -s -X POST "https://api.trello.com/1/cards/$CARD_ID/actions/comments" \
+            --data-urlencode "key=$KEY" --data-urlencode "token=$TOKEN" \
+            --data-urlencode "text=❌ Build fallida, revisar: $RUN_URL"
