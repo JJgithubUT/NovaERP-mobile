@@ -1,23 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
-import '../../../core/auth/permisos.dart';
 import '../../../core/config/app_colors.dart';
-import '../../../core/network/api_exception.dart';
-import '../../../core/utils/descarga.dart';
 import '../../../core/utils/formato.dart';
 import '../../../core/widgets/lista_paginada.dart';
 import '../../../models/auditoria.dart';
-import '../../../providers/auth_provider.dart';
 import '../../../services/auditoria_service.dart';
 import '../detalle_evento.dart';
+import 'accion_exportar_bitacora.dart';
 
 /// HU21 - Consulta de bitacora de auditoria del tenant.
 ///
 /// Vista estrictamente de solo lectura (la bitacora es append-only), de lo mas
 /// reciente a lo mas antiguo, con filtros por usuario, fecha, tipo de operacion y
-/// entidad afectada. Exportable a CSV o PDF con los mismos filtros, solo con el
-/// permiso `core:bitacora:exportar`. Al tocar un evento se abre su detalle (HU20).
+/// entidad afectada. Al tocar un evento se abre su detalle (HU20). La
+/// exportacion a CSV o PDF con los mismos filtros es de HU24
+/// (`AccionExportarBitacora`, en su propio archivo).
 ///
 /// El filtro de tenant lo aplica el backend: no existe forma de ver otro.
 class BitacoraTab extends StatefulWidget {
@@ -63,7 +60,6 @@ class BitacoraTabState extends State<BitacoraTab> {
   String? _entidad;
   DateTime? _desde;
   DateTime? _hasta;
-  bool _exportando = false;
 
   int get _filtrosAvanzados => [
     _usuarioId,
@@ -134,58 +130,8 @@ class BitacoraTabState extends State<BitacoraTab> {
     recargar();
   }
 
-  Future<void> _exportar(String formato) async {
-    setState(() => _exportando = true);
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final archivo = await _servicio.exportarBitacora(
-        formato: formato,
-        usuarioId: _usuarioId,
-        operacion: _operacion,
-        entidad: _entidad,
-        desde: _desde,
-        hasta: _hasta,
-      );
-      await guardarArchivo(archivo);
-      messenger.showSnackBar(
-        SnackBar(
-          backgroundColor: AppColors.success,
-          content: Text(
-            'Bitácora exportada (${formato.toUpperCase()}).',
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-      );
-    } on ApiException catch (e) {
-      messenger.showSnackBar(
-        SnackBar(
-          backgroundColor: AppColors.primary,
-          content: Text(
-            e.esPermisoDenegado || e.esReglaDeNegocio
-                ? e.mensaje
-                : 'No fue posible exportar la bitácora de auditoría.',
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-      );
-    } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(
-          backgroundColor: AppColors.primary,
-          content: Text(
-            'No fue posible exportar la bitácora de auditoría.',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _exportando = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
     final hayFiltros = _filtrosAvanzados > 0 || _operacion != null;
 
     // Los filtros viven FUERA de la lista para no reconstruirlos en cada consulta.
@@ -218,34 +164,14 @@ class BitacoraTabState extends State<BitacoraTab> {
                   child: const Text('Limpiar'),
                 ),
               const Spacer(),
-              if (auth.puede(Permisos.bitacoraExportar))
-                _exportando
-                    ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2.5),
-                        ),
-                      )
-                    : PopupMenuButton<String>(
-                        tooltip: 'Exportar',
-                        onSelected: _exportar,
-                        icon: const Icon(
-                          Icons.file_download_outlined,
-                          color: AppColors.primary,
-                        ),
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(
-                            value: 'csv',
-                            child: Text('Exportar a CSV'),
-                          ),
-                          PopupMenuItem(
-                            value: 'pdf',
-                            child: Text('Exportar a PDF'),
-                          ),
-                        ],
-                      ),
+              // La exportacion a CSV o PDF es de HU24: usa los mismos filtros.
+              AccionExportarBitacora(
+                usuarioId: _usuarioId,
+                operacion: _operacion,
+                entidad: _entidad,
+                desde: _desde,
+                hasta: _hasta,
+              ),
             ],
           ),
         ),

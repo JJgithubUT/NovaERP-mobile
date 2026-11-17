@@ -6,6 +6,7 @@ import '../../core/config/app_colors.dart';
 import '../../providers/auth_provider.dart';
 import '../audit/auditoria_screen.dart';
 import '../profile/profile_screen.dart';
+import '../reports/reportes_screen.dart';
 import '../staff/staff_screen.dart';
 
 /// Contenedor principal tras el login: panel de inicio y perfil.
@@ -49,6 +50,13 @@ class _HomeScreenState extends State<HomeScreen> {
           icono: Icons.fact_check_outlined,
           iconoActivo: Icons.fact_check,
           pantalla: AuditoriaScreen(),
+        ),
+      if (auth.veReportes)
+        const _Seccion(
+          etiqueta: 'Reportes',
+          icono: Icons.bar_chart_outlined,
+          iconoActivo: Icons.bar_chart,
+          pantalla: ReportesScreen(),
         ),
       const _Seccion(
         etiqueta: 'Perfil',

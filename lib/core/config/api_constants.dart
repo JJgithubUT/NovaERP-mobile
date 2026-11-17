@@ -56,6 +56,9 @@ class ApiConstants {
   static const String bitacora = '/api/core/bitacora/';
   static const String bitacoraExportar = '/api/core/bitacora/export/';
 
+  // --- Reportes (EP05). Actividad de usuarios; con ?formato=csv|pdf exporta.
+  static const String reporteActividad = '/api/core/reportes/actividad/';
+
   /// Base de la URL de activacion que se comparte al dar de alta un usuario,
   /// p. ej. 'https://erp.miempresa.com/activar'.
   ///
