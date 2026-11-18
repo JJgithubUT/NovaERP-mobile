@@ -14,7 +14,8 @@ class ActividadUsuario {
   final String? departamento;
   final String? puesto;
 
-  /// activo / suspendido / pendiente, segun el catalogo del backend.
+  /// activo / pendiente / pendiente_verificacion / suspendido, segun el
+  /// catalogo del backend.
   final String estado;
 
   /// Ultimo ingreso exitoso (evento LOGIN). Nulo si nunca ha entrado.

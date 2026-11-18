@@ -164,13 +164,16 @@ class BitacoraTabState extends State<BitacoraTab> {
                   child: const Text('Limpiar'),
                 ),
               const Spacer(),
-              // La exportacion a CSV o PDF es de HU24: usa los mismos filtros.
+              // La exportacion a CSV o PDF es de HU24: usa los mismos filtros. Al
+              // terminar se recarga la lista para que aparezca el evento EXPORT
+              // que el backend acaba de registrar.
               AccionExportarBitacora(
                 usuarioId: _usuarioId,
                 operacion: _operacion,
                 entidad: _entidad,
                 desde: _desde,
                 hasta: _hasta,
+                onExportada: recargar,
               ),
             ],
           ),

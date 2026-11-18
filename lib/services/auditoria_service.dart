@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import '../core/config/api_constants.dart';
 import '../core/network/api_client.dart';
 import '../core/network/api_exception.dart';
@@ -43,7 +45,7 @@ class AuditoriaService {
         'operacion': operacion,
         'entidad': entidad,
         'desde': _soloFecha(desde),
-        'hasta': _soloFecha(hasta),
+        'hasta': _soloFecha(_diaSiguiente(hasta)),
       }),
     );
     return Paginado.fromJson(json, EventoAuditoria.fromJson);
@@ -93,8 +95,33 @@ class AuditoriaService {
     DateTime? desde,
     DateTime? hasta,
   }) async {
-    // TODO(HU24): implementar.
-    throw UnimplementedError('HU24: AuditoriaService.exportarBitacora');
+    return _api.descargar(
+      ApiConstants.bitacoraExportar,
+      query: _consulta({
+        'formato': formato,
+        'usuario_id': usuarioId,
+        'operacion': operacion,
+        'entidad': entidad,
+        'desde': _soloFecha(desde),
+        'hasta': _soloFecha(_diaSiguiente(hasta)),
+      }),
+      nombreBase: nombreBase(DateTime.now().toUtc()),
+    );
+  }
+
+  /// Nombre del archivo exportado, con el mismo patron que arma el backend
+  /// (`bitacora_<tenant>_<AAAAMMDD>_<HHMMSS>`). En web el cliente no puede leer
+  /// `Content-Disposition`, asi que el nombre se arma aqui.
+  @visibleForTesting
+  static String nombreBase(
+    DateTime ahoraUtc, {
+    String tenant = ApiConstants.tenantSlug,
+  }) {
+    String dd(int n) => n.toString().padLeft(2, '0');
+    final fecha = '${ahoraUtc.year}${dd(ahoraUtc.month)}${dd(ahoraUtc.day)}';
+    final hora =
+        '${dd(ahoraUtc.hour)}${dd(ahoraUtc.minute)}${dd(ahoraUtc.second)}';
+    return 'bitacora_${tenant}_${fecha}_$hora';
   }
 
   // ===================================================================
@@ -118,4 +145,19 @@ class AuditoriaService {
     String dd(int n) => n.toString().padLeft(2, '0');
     return '${fecha.year}-${dd(fecha.month)}-${dd(fecha.day)}';
   }
+
+  /// El backend trata `hasta` como EXCLUSIVO (compara contra las 00:00 de ese
+  /// dia en la zona horaria del servidor, `TIME_ZONE`): elegir "hasta el 16"
+  /// dejaria fuera todos los eventos del 16. Para incluir el dia elegido se manda
+  /// el siguiente. Aplica a la consulta y a la exportacion, que deben ver lo
+  /// mismo. El backend registra el valor recibido (`hasta` +1 dia) en la linea
+  /// "Filtros" del archivo y en el evento EXPORT. Si algun dia pasa a inclusivo,
+  /// hay que quitar las dos llamadas a `_diaSiguiente` (bitacora y exportacion).
+  @visibleForTesting
+  static DateTime? diaSiguiente(DateTime? fecha) {
+    if (fecha == null) return null;
+    return DateTime(fecha.year, fecha.month, fecha.day + 1);
+  }
+
+  DateTime? _diaSiguiente(DateTime? fecha) => diaSiguiente(fecha);
 }

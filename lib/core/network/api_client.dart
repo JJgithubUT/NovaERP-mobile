@@ -100,16 +100,32 @@ class ApiClient {
   /// [nombreBase] es el nombre sugerido sin extension: el backend lo manda en
   /// `Content-Disposition`, pero en web ese encabezado no es legible desde otro
   /// origen, asi que la extension se deduce del tipo de contenido.
+  ///
+  /// [espera] es el tiempo maximo de respuesta. Es mayor que el de las demas
+  /// peticiones (20 s) porque el backend genera el archivo de forma sincrona: un
+  /// PDF de miles de filas tarda decenas de segundos y, si el cliente se rinde
+  /// antes, el backend ya habria registrado la exportacion sin entregar nada.
+  ///
+  /// Se sube TAMBIEN `connectTimeout`: en web el navegador no distingue "conectar"
+  /// de "esperar la primera respuesta" (un GET sin cuerpo no reporta progreso
+  /// hasta recibir las cabeceras), asi que el adaptador de Dio abortaria a los
+  /// 15 s del `connectTimeout` general mientras el backend aun arma el archivo.
+  /// En movil y escritorio ese tiempo solo cubre la conexion TCP.
   Future<ArchivoDescargado> descargar(
     String endpoint, {
     Map<String, dynamic>? query,
     String nombreBase = 'archivo',
+    Duration espera = const Duration(minutes: 3),
   }) async {
     try {
       final respuesta = await _dio.get<List<int>>(
         endpoint,
         queryParameters: query,
-        options: Options(responseType: ResponseType.bytes),
+        options: Options(
+          responseType: ResponseType.bytes,
+          connectTimeout: espera,
+          receiveTimeout: espera,
+        ),
       );
       final tipo = respuesta.headers.value('content-type') ?? 'application/octet-stream';
       final extension = tipo.contains('pdf')

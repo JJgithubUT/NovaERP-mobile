@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
@@ -17,5 +18,7 @@ Future<void> guardarArchivo(ArchivoDescargado archivo) async {
   web.document.body?.append(enlace);
   enlace.click();
   enlace.remove();
-  web.URL.revokeObjectURL(url);
+  // Se revoca con retraso: en el mismo turno que el click puede cortar la
+  // descarga en algunos navegadores (Firefox, Safari).
+  Timer(const Duration(seconds: 30), () => web.URL.revokeObjectURL(url));
 }

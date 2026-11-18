@@ -239,6 +239,7 @@ class ListaPaginadaState<T> extends State<ListaPaginada<T>> {
           return _Pie(
             cargando: _cargando,
             error: _error,
+            mensajeError: widget.mensajeError,
             hayMas: _hayMas,
             onReintentar: _cargarSiguientePagina,
           );
@@ -254,10 +255,16 @@ class _Pie extends StatelessWidget {
     required this.error,
     required this.hayMas,
     required this.onReintentar,
+    this.mensajeError,
   });
 
   final bool cargando;
   final ApiException? error;
+
+  /// Mismo texto fijo que usa el estado de error de la primera pagina: si el
+  /// criterio de aceptacion lo fija, tambien aplica al fallar una pagina
+  /// posterior (y evita mostrar el texto tecnico con la URL del servidor).
+  final String? mensajeError;
   final bool hayMas;
   final VoidCallback onReintentar;
 
@@ -288,7 +295,9 @@ class _Pie extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                error!.mensaje,
+                error!.esPermisoDenegado
+                    ? error!.mensaje
+                    : (mensajeError ?? error!.mensaje),
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 13, color: AppColors.grey),
               ),

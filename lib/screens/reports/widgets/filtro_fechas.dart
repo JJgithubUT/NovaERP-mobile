@@ -29,12 +29,18 @@ class FiltroFechas extends StatelessWidget {
     return 'Hasta ${dd(hasta!)}';
   }
 
+  /// Primer dia de una ventana de [dias] dias que termina hoy ([hoy] incluido).
+  ///
+  /// Aritmetica de CALENDARIO, no de duracion: restar `Duration(days: n)` resta
+  /// n x 24 h exactas y, si la ventana cruza el cambio de hora de primavera, cae
+  /// a las 23:00 del dia anterior (un dia de mas en el reporte y en la etiqueta).
+  @visibleForTesting
+  static DateTime inicioUltimosDias(DateTime hoy, int dias) =>
+      DateTime(hoy.year, hoy.month, hoy.day - (dias - 1));
+
   void _ultimosDias(int dias) {
     final hoy = DateTime.now();
-    onCambio(
-      DateTime(hoy.year, hoy.month, hoy.day).subtract(Duration(days: dias - 1)),
-      hoy,
-    );
+    onCambio(inicioUltimosDias(hoy, dias), hoy);
   }
 
   Future<void> _rangoAMedida(BuildContext context) async {

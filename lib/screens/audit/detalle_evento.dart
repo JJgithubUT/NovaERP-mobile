@@ -12,8 +12,10 @@ import '../../providers/auth_provider.dart';
 ///
 /// El registro automatico lo hace el backend: cada CREATE, UPDATE o DELETE
 /// genera un evento append-only, con los datos sensibles enmascarados como
-/// `[REDACTED]`. La app lo muestra tal cual, en solo lectura y sin ninguna
-/// accion de edicion o baja.
+/// `[REDACTED]`. La app lo muestra en solo lectura y sin ninguna accion de
+/// edicion o baja. Unica excepcion: el campo `cuerpo` (cuerpo de una
+/// notificacion) se OCULTA, porque el backend lo audita sin enmascarar y puede
+/// incluir enlaces con tokens de activacion o de restablecimiento.
 ///
 /// Muestra los 7 campos obligatorios del registro: marca de tiempo (UTC),
 /// tenant, usuario, IP de origen, tipo de operacion, id de la entidad afectada y
@@ -35,6 +37,12 @@ Future<void> abrirDetalleEvento(
 }
 
 const _redactado = '[REDACTED]';
+
+/// Campos que la app NUNCA muestra aunque el backend los envie: el cuerpo de una
+/// notificacion se audita sin enmascarar y puede incluir enlaces con tokens de
+/// activacion o de restablecimiento de contrasena.
+const _camposOcultos = {'cuerpo'};
+const _oculto = '[OCULTO EN LA APP]';
 
 const _etiquetasOperacion = {
   'INSERT': 'Alta',
@@ -230,7 +238,14 @@ class _Payload extends StatelessWidget {
       final claves = {...antes.keys, ...despues.keys}.toList()..sort();
       for (final c in claves) {
         if (_texto(antes[c]) == _texto(despues[c])) continue;
-        filas.add(_FilaValor(clave: c, antes: antes[c], despues: despues[c]));
+        filas.add(
+          _FilaValor(
+            clave: c,
+            antes: antes[c],
+            despues: despues[c],
+            cambio: true,
+          ),
+        );
       }
       if (filas.isEmpty) {
         filas.add(
@@ -267,17 +282,27 @@ class _Payload extends StatelessWidget {
     }
 
     final enmascarados = evento.camposEnmascarados;
+    final ocultos = {
+      ...?antes?.keys,
+      ...?despues?.keys,
+    }.where(_camposOcultos.contains).toList()..sort();
     return _Seccion(
       titulo: titulo,
       hijos: [
-        if (enmascarados.isNotEmpty)
+        if (enmascarados.isNotEmpty || ocultos.isNotEmpty)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             color: AppColors.warning.withValues(alpha: 0.08),
             child: Text(
-              'Los datos sensibles (${enmascarados.join(', ')}) se guardan '
-              'enmascarados como $_redactado.',
+              [
+                if (enmascarados.isNotEmpty)
+                  'Los datos sensibles (${enmascarados.join(', ')}) se '
+                      'guardan enmascarados como $_redactado.',
+                if (ocultos.isNotEmpty)
+                  'La app oculta ${ocultos.join(', ')}: puede incluir '
+                      'enlaces con tokens.',
+              ].join('\n'),
               style: const TextStyle(fontSize: 11.5, height: 1.35),
             ),
           ),
@@ -293,6 +318,7 @@ class _FilaValor extends StatelessWidget {
     this.antes,
     this.despues,
     this.soloAntes = false,
+    this.cambio = false,
   });
 
   final String clave;
@@ -300,9 +326,35 @@ class _FilaValor extends StatelessWidget {
   final Object? despues;
   final bool soloAntes;
 
+  /// Campo que cambio en un UPDATE: se muestran SIEMPRE los dos valores, el
+  /// anterior tachado y el nuevo. No se decide por nulidad porque un campo que
+  /// pasa a NULL (se limpia un bloqueo, se consume un token) mostraria el valor
+  /// viejo como si siguiera vigente.
+  final bool cambio;
+
   @override
   Widget build(BuildContext context) {
-    final mostrarAmbos = antes != null && despues != null && !soloAntes;
+    final mostrarAmbos = cambio && !soloAntes;
+    if (_camposOcultos.contains(clave)) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              clave,
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.grey,
+              ),
+            ),
+            const SizedBox(height: 3),
+            const _Valor(_oculto),
+          ],
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -337,7 +389,7 @@ class _Valor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enmascarado = texto == _redactado;
+    final enmascarado = texto == _redactado || texto == _oculto;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

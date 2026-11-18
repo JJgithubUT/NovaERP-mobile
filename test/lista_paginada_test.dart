@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:novaerpmobile/core/network/api_exception.dart';
 import 'package:novaerpmobile/core/widgets/lista_paginada.dart';
 import 'package:novaerpmobile/models/paginado.dart';
 
@@ -120,5 +121,87 @@ void main() {
     await tester.pump();
     expect(find.text('nuevo'), findsOneWidget);
     expect(find.text('viejo'), findsNothing);
+  });
+
+  group('fallo al pedir una pagina posterior', () {
+    // Pagina 1 con filas altas para que haya scroll y se pida la 2.
+    Paginado<String> primera() => Paginado(
+      total: 40,
+      pagina: 1,
+      tamanoPagina: 20,
+      numeroPaginas: 2,
+      elementos: [for (var i = 0; i < 20; i++) 'fila $i'],
+    );
+
+    Future<void> llegarAlFinal(
+      WidgetTester tester,
+      ApiException error, {
+      String? mensajeError,
+    }) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ListaPaginada<String>(
+              mensajeError: mensajeError,
+              cargar: (pagina) async {
+                if (pagina == 1) return primera();
+                throw error;
+              },
+              itemBuilder: (_, e) => ListTile(title: Text(e)),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.drag(find.byType(ListView), const Offset(0, -5000));
+      await tester.pumpAndSettle();
+    }
+
+    const caida = ApiException(
+      mensaje:
+          'No se pudo establecer la conexion.\n\nDestino: http://x/?page=2',
+    );
+
+    testWidgets('muestra el texto fijo del criterio, sin la URL tecnica', (
+      tester,
+    ) async {
+      await llegarAlFinal(
+        tester,
+        caida,
+        mensajeError: 'No fue posible generar el reporte.',
+      );
+
+      expect(find.text('No fue posible generar el reporte.'), findsOneWidget);
+      expect(find.textContaining('Destino'), findsNothing);
+      expect(find.text('Reintentar'), findsOneWidget);
+    });
+
+    testWidgets('sin texto fijo conserva el mensaje del servidor', (
+      tester,
+    ) async {
+      await llegarAlFinal(tester, caida);
+
+      expect(find.textContaining('Destino'), findsOneWidget);
+    });
+
+    testWidgets(
+      'el 403 conserva el detalle del permiso aunque haya texto fijo',
+      (tester) async {
+        await llegarAlFinal(
+          tester,
+          const ApiException(
+            statusCode: 403,
+            mensaje: 'Falta el permiso core:reportes:leer.',
+          ),
+          mensajeError: 'No fue posible generar el reporte.',
+        );
+
+        expect(
+          find.text('Falta el permiso core:reportes:leer.'),
+          findsOneWidget,
+        );
+        expect(find.text('No fue posible generar el reporte.'), findsNothing);
+      },
+    );
   });
 }
