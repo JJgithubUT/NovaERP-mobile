@@ -49,34 +49,6 @@ class AuditoriaService {
     return Paginado.fromJson(json, EventoAuditoria.fromJson);
   }
 
-  /// Exporta la bitacora con los mismos filtros de [bitacora].
-  ///
-  /// GET [ApiConstants.bitacoraExportar]   query: formato=csv|pdf, filtros...
-  /// Exige `core:bitacora:exportar`. El backend registra la exportacion como un
-  /// evento EXPORT. Usar `ApiClient.descargar` y entregar el archivo con
-  /// `guardarArchivo` (core/utils/descarga.dart).
-  Future<ArchivoDescargado> exportarBitacora({
-    required String formato,
-    String? usuarioId,
-    String? operacion,
-    String? entidad,
-    DateTime? desde,
-    DateTime? hasta,
-  }) async {
-    return _api.descargar(
-      ApiConstants.bitacoraExportar,
-      query: _consulta({
-        'formato': formato,
-        'usuario_id': usuarioId,
-        'operacion': operacion,
-        'entidad': entidad,
-        'desde': _soloFecha(desde),
-        'hasta': _soloFecha(hasta),
-      }),
-      nombreBase: 'bitacora_auditoria',
-    );
-  }
-
   /// Indice `usuario_id -> nombre` para mostrar nombres en lugar de ids.
   ///
   /// La bitacora solo trae `usuario_id`. Si quien consulta no puede leer el
@@ -100,6 +72,29 @@ class AuditoriaService {
       // se muestra el id abreviado en lugar del nombre.
     }
     return indice;
+  }
+
+  // ===================================================================
+  // HU24 - Exportacion de la bitacora de auditoria
+  // ===================================================================
+
+  /// Exporta la bitacora con los mismos filtros de [bitacora].
+  ///
+  /// GET [ApiConstants.bitacoraExportar]   query: formato=csv|pdf, filtros...
+  /// Exige `core:bitacora:exportar`. El archivo trae los metadatos (quien lo
+  /// genero, fecha y hora, filtros aplicados) y el backend registra la
+  /// exportacion como un evento EXPORT. Usar `ApiClient.descargar` y entregar el
+  /// archivo con `guardarArchivo` (core/utils/descarga.dart).
+  Future<ArchivoDescargado> exportarBitacora({
+    required String formato,
+    String? usuarioId,
+    String? operacion,
+    String? entidad,
+    DateTime? desde,
+    DateTime? hasta,
+  }) async {
+    // TODO(HU24): implementar.
+    throw UnimplementedError('HU24: AuditoriaService.exportarBitacora');
   }
 
   // ===================================================================
