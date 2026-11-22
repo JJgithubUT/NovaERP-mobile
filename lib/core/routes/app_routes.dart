@@ -4,6 +4,7 @@ import '../../screens/auth/auth_gate.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../screens/recovery/forgot_password_screen.dart';
 import '../../screens/sessions/sessions_screen.dart';
+import 'ruta_protegida.dart';
 
 /// Rutas con nombre de la app.
 ///
@@ -14,6 +15,9 @@ import '../../screens/sessions/sessions_screen.dart';
 ///
 /// Todas las rutas del sprint ya estan registradas: ninguna HU necesita editar
 /// este archivo (evita conflictos de merge).
+///
+/// Las rutas que exigen sesion van envueltas en [RutaProtegida]: en web se
+/// pueden abrir tecleando la URL, y sin sesion deben llevar al login.
 class AppRoutes {
   static const String raiz = '/';
   static const String profile = '/profile';
@@ -23,9 +27,9 @@ class AppRoutes {
   static Map<String, WidgetBuilder> get routes {
     return {
       raiz: (context) => const AuthGate(),
-      profile: (context) => const ProfileScreen(),
+      profile: (context) => const RutaProtegida(child: ProfileScreen()),
       recuperarPassword: (context) => const ForgotPasswordScreen(),
-      sesiones: (context) => const SessionsScreen(),
+      sesiones: (context) => const RutaProtegida(child: SessionsScreen()),
     };
   }
 }
