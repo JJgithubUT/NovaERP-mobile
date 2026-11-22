@@ -31,8 +31,14 @@ class AccionEditarUsuario extends StatelessWidget {
       etiqueta: 'Editar usuario',
       detalle: 'Correo, nombre, teléfono, puesto y departamento',
       onTap: () async {
+        final auth = context.read<AuthProvider>();
         final guardado = await abrirEdicionUsuario(context, usuario);
-        if (guardado) onEditado();
+        if (!guardado) return;
+        // Si se edito a si mismo, "Mi perfil" debe reflejar el cambio.
+        if (auth.contexto?.usuario.id == usuario.id) {
+          await auth.recargarPerfil();
+        }
+        onEditado();
       },
     );
   }

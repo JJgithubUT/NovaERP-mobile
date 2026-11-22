@@ -22,13 +22,39 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
+  late final AuthProvider _auth;
+  late EstadoSesion _estadoAnterior;
+
   @override
   void initState() {
     super.initState();
+    _auth = context.read<AuthProvider>();
+    _estadoAnterior = _auth.estado;
+    _auth.addListener(_alCambiarSesion);
     // Tras el primer frame, para no notificar oyentes durante el build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AuthProvider>().inicializar();
+      _auth.inicializar();
     });
+  }
+
+  @override
+  void dispose() {
+    _auth.removeListener(_alCambiarSesion);
+    super.dispose();
+  }
+
+  /// Si la sesion se pierde estando dentro (401 por sesion vencida o revocada,
+  /// o cierre de sesion), cierra las pantallas apiladas encima: AuthGate ya
+  /// muestra el login debajo, pero una pantalla abierta con push (detalle de
+  /// usuario, sesiones, formularios...) seguiria tapandolo.
+  void _alCambiarSesion() {
+    final estado = _auth.estado;
+    final perdioLaSesion =
+        _estadoAnterior == EstadoSesion.activa && estado != EstadoSesion.activa;
+    _estadoAnterior = estado;
+    if (perdioLaSesion && mounted) {
+      Navigator.of(context).popUntil((ruta) => ruta.isFirst);
+    }
   }
 
   @override

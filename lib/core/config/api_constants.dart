@@ -49,6 +49,16 @@ class ApiConstants {
   static const String usuarios = '/api/core/usuarios/';
   static const String roles = '/api/core/roles/';
 
+  /// Catalogo maestro de permisos, agrupado por dominio (selector de roles).
+  static const String permisos = '/api/core/permisos/';
+
+  // --- Auditoria (EP04). Bitacora del tenant y su exportacion a CSV o PDF.
+  static const String bitacora = '/api/core/bitacora/';
+  static const String bitacoraExportar = '/api/core/bitacora/export/';
+
+  // --- Reportes (EP05). Actividad de usuarios; con ?formato=csv|pdf exporta.
+  static const String reporteActividad = '/api/core/reportes/actividad/';
+
   /// Base de la URL de activacion que se comparte al dar de alta un usuario,
   /// p. ej. 'https://erp.miempresa.com/activar'.
   ///

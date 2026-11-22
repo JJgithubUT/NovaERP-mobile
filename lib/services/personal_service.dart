@@ -27,13 +27,48 @@ class PersonalService {
   Future<List<Rol>> rolesActivos() async {
     final acumulados = <Rol>[];
     var pagina = 1;
+
     while (true) {
       final lote = await roles(pagina: pagina);
       acumulados.addAll(lote.elementos.where((r) => r.activo));
+
       if (!lote.hayMasPaginas) break;
       pagina++;
     }
+
     return acumulados;
+  }
+
+  // ===================================================================
+  // HU12 - Editar rol personalizado
+  // ===================================================================
+
+  /// Edición parcial o total de un rol personalizado.
+  ///
+  /// PATCH [ApiConstants.roles]{id}/
+  Future<Rol> editarRol(String id, Map<String, dynamic> cambios) async {
+    final json = await _api.patch('${ApiConstants.roles}$id/', cambios);
+    return Rol.fromJson(json);
+  }
+
+  // ===================================================================
+  // HU13 - Eliminar o desactivar un rol personalizado
+  // ===================================================================
+
+  /// Desactiva un rol personalizado.
+  ///
+  /// POST [ApiConstants.roles]{id}/desactivar/
+  Future<void> desactivarRol(String id, {bool confirmado = false}) async {
+    await _api.post('${ApiConstants.roles}$id/desactivar/', {
+      if (confirmado) 'confirmado': true,
+    });
+  }
+
+  /// Reactiva un rol personalizado.
+  ///
+  /// POST [ApiConstants.roles]{id}/reactivar/
+  Future<void> reactivarRol(String id) async {
+    await _api.post('${ApiConstants.roles}$id/reactivar/');
   }
 
   // ===================================================================
@@ -44,7 +79,7 @@ class PersonalService {
   /// fijarla consumiendo el token de activacion que devuelve esta llamada.
   ///
   /// POST [ApiConstants.usuarios]
-  ///   body: {correo, nombre_completo, telefono?, puesto?, departamento?, roles}
+  /// body: {correo, nombre_completo, telefono?, puesto?, departamento?, roles}
   Future<UsuarioCreado> crearUsuario({
     required String correo,
     required String nombreCompleto,
@@ -62,6 +97,7 @@ class PersonalService {
         'departamento': departamento,
       if (rolesIds.isNotEmpty) 'roles': rolesIds,
     });
+
     return UsuarioCreado.fromJson(json);
   }
 
@@ -72,7 +108,7 @@ class PersonalService {
   /// Directorio paginado. Busca en nombre, correo y puesto.
   ///
   /// GET [ApiConstants.usuarios]
-  ///   query: page, search, estado, departamento, rol, orden, desc
+  /// query: page, search, estado, departamento, rol, orden, desc
   /// El backend aplica solo el filtro de tenant.
   Future<Paginado<UsuarioDirectorio>> usuarios({
     int pagina = 1,
@@ -95,6 +131,7 @@ class PersonalService {
         if (descendente) 'desc': 'true',
       }),
     );
+
     return Paginado.fromJson(json, UsuarioDirectorio.fromJson);
   }
 
@@ -102,16 +139,16 @@ class PersonalService {
   // HU07 - Editar usuario
   // ===================================================================
 
-  /// Edicion parcial de datos del usuario. Cambiar el correo devuelve un nuevo
-  /// token, esta vez de verificacion.
+  /// Edicion parcial de datos del usuario.
   ///
-  /// PATCH [ApiConstants.usuarios]{id}/   body: solo los campos que cambian
+  /// PATCH [ApiConstants.usuarios]{id}/
   Future<UsuarioCreado> editarUsuario(
     String id,
     Map<String, dynamic> cambios,
   ) async {
-    // TODO(HU07): implementar.
-    throw UnimplementedError('HU07: PersonalService.editarUsuario');
+    final json = await _api.patch('${ApiConstants.usuarios}$id/', cambios);
+
+    return UsuarioCreado.fromJson(json);
   }
 
   // ===================================================================
@@ -122,30 +159,47 @@ class PersonalService {
   ///
   /// POST [ApiConstants.usuarios]{id}/suspender/
   Future<void> suspender(String id) async {
-    // TODO(HU08): implementar.
-    throw UnimplementedError('HU08: PersonalService.suspender');
+    await _api.post('${ApiConstants.usuarios}$id/suspender/');
   }
 
   /// Reactiva a un usuario suspendido, conservando sus roles.
   ///
   /// POST [ApiConstants.usuarios]{id}/reactivar/
   Future<void> reactivar(String id) async {
-    // TODO(HU08): implementar.
-    throw UnimplementedError('HU08: PersonalService.reactivar');
+    await _api.post('${ApiConstants.usuarios}$id/reactivar/');
   }
+
+      // TODO(HU14): implementar.
+  Future<void> vincularRol(String id) async {
+    // TODO(HU14): implementar.
+     final json = await _api.post('${ApiConstants.usuarios}$usuarioId/roles/', {
+      'roles': rolesIds,
+  });
+    return RolAsignado.listaDesde(json);
+    }
 
   // ===================================================================
   // BASE (ya hecho)
   // ===================================================================
 
+  // TODO(HU10): implementar.
+  final json = await _api.post(ApiConstants.roles, {
+      'nombre': nombre,
+      'permisos': permisos.toList(),
+    });
+    return Rol.fromJson(json)
+
   /// Descarta parametros nulos o vacios antes de armar el query string.
   Map<String, dynamic> _consulta(Map<String, dynamic> parametros) {
     final limpio = <String, dynamic>{};
+
     parametros.forEach((clave, valor) {
       if (valor == null) return;
       if (valor is String && valor.trim().isEmpty) return;
+
       limpio[clave] = valor;
     });
+
     return limpio;
   }
 }
